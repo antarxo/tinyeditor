@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>HTML Editor - Raw Mode</title>
+  <title>HTML Editor</title>
   <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
   <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js" referrerpolicy="origin"></script>
   <style>
@@ -12,8 +12,10 @@
       background-color: #f4f4f4;
     }
 
-    h2 {
-      color: #333;
+    #toolbar-buttons {
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1000;
     }
 
     #status {
@@ -24,7 +26,6 @@
 
     textarea, #editor_ifr {
       width: 100%;
-      margin-bottom: 100px; /* Αποφυγή επικάλυψης */
       border: 2px solid #ccc;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -52,17 +53,16 @@
 </head>
 <body>
 
-<h2>📝 HTML Raw Editor</h2>
+<div id="toolbar-buttons">
+  <button onclick="saveFile()">💾 Αποθήκευση αρχείου</button>
+  <label>
+    📂 Άνοιγμα:
+    <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
+  </label>
+  <span id="status"></span>
+</div>
 
 <textarea id="editor"></textarea>
-
-<br>
-<button onclick="saveFile()">💾 Αποθήκευση αρχείου</button>
-<label>
-  📂 Άνοιγμα:
-  <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
-</label>
-<span id="status"></span>
 
 <script>
   tinymce.init({
