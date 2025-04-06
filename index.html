@@ -1,58 +1,83 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-  <meta charset="UTF-8">
-  <title>Ελληνικός TinyMCE Editor</title>
+  <meta charset="UTF-8" />
+  <title>HTML Editor - Raw Mode</title>
   <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-  <script>
-    tinymce.init({
-      selector: '#editor',
-      height: 600,
-      language: 'el',
-      plugins: 'code link image lists table fullscreen autoresize',
-      toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | table | link image | code fullscreen | saveLocal saveFile',
-      menubar: false,
-      branding: false,
-      entity_encoding: 'raw', // Υποστήριξη ελληνικών χαρακτήρων
-      images_upload_url: 'postAcceptor.php', // θα αγνοηθεί τοπικά
-      images_upload_handler: function (blobInfo, success, failure) {
-        success("data:" + blobInfo.blob().type + ";base64," + blobInfo.base64());
-      },
-      content_style: 'body { font-family:Arial,sans-serif; font-size:14px }',
-      setup: function(editor) {
-        // Κουμπί για αποθήκευση στο localStorage
-        editor.ui.registry.addButton('saveLocal', {
-          text: 'Αποθήκευση (localStorage)',
-          onAction: function() {
-            var content = editor.getContent();
-            localStorage.setItem('savedContent', content);
-            alert('Το περιεχόμενο αποθηκεύτηκε τοπικά στο localStorage!');
-          }
-        });
-        // Κουμπί για λήψη ως αρχείο HTML
-        editor.ui.registry.addButton('saveFile', {
-          text: 'Αποθήκευση ως αρχείο',
-          onAction: function() {
-            var content = editor.getContent();
-            var blob = new Blob([content], { type: 'text/html' });
-            var link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'editorContent.html';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-          }
-        });
-      }
-    });
-  </script>
+  <style>
+    body {
+      margin: 20px;
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+    }
+    #status {
+      margin-top: 10px;
+      color: green;
+    }
+    textarea {
+      width: 100%;
+    }
+    button, label {
+      margin-top: 10px;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
-  <h2>Επεξεργαστής WYSIWYG με Ελληνικά & HTML View</h2>
-  <textarea id="editor">
-    <h3>Γράψε εδώ</h3>
-    <p>Αυτός ο editor υποστηρίζει μορφοποίηση, εισαγωγή εικόνας, HTML επεξεργασία, πίνακες και πολλά άλλα.</p>
-  </textarea>
+
+<h2>Raw HTML Editor</h2>
+
+<textarea id="editor"></textarea>
+
+<br>
+<button onclick="saveFile()">💾 Αποθήκευση αρχείου</button>
+<label style="margin-left: 10px;">
+  📂 Άνοιγμα:
+  <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
+</label>
+<span id="status"></span>
+
+<script>
+  tinymce.init({
+    selector: '#editor',
+    plugins: 'code link lists fullscreen',
+    toolbar: 'undo redo | styles | bold italic | alignleft aligncenter alignright | bullist numlist | link | code fullscreen',
+    height: 600,
+    paste_data_images: false,
+    images_upload_handler: function (blobInfo, success, failure) {
+      failure("Η μεταφόρτωση εικόνων είναι απενεργοποιημένη.");
+    },
+    file_picker_types: 'image',
+    file_picker_callback: function (callback, value, meta) {
+      if (meta.filetype === 'image') {
+        const path = prompt("Δώσε σχετικό path εικόνας (π.χ. assets/img.png):");
+        if (path) callback(path, { alt: 'εικόνα' });
+      }
+    }
+  });
+
+  function loadFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      tinymce.get('editor').setContent(e.target.result);
+    };
+    reader.readAsText(file);
+  }
+
+  function saveFile() {
+    const content = tinymce.get("editor").getContent();
+    const blob = new Blob([content], { type: "text/html" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "edited-file.html";
+    a.click();
+    document.getElementById("status").textContent = "✔ Αποθηκεύτηκε";
+    setTimeout(() => document.getElementById("status").textContent = "", 3000);
+  }
+</script>
+
 </body>
 </html>
