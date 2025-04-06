@@ -1,1 +1,59 @@
-# tinyeditor
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <title>Ελληνικός TinyMCE Editor</title>
+  <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+  <script>
+    tinymce.init({
+      selector: '#editor',
+      height: 600,
+      language: 'el',
+      plugins: 'code link image lists table fullscreen autoresize',
+      toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | table | link image | code fullscreen | saveLocal saveFile',
+      menubar: false,
+      branding: false,
+      entity_encoding: 'raw', // Υποστήριξη ελληνικών χαρακτήρων
+      images_upload_url: 'postAcceptor.php', // θα αγνοηθεί τοπικά
+      images_upload_handler: function (blobInfo, success, failure) {
+        success("data:" + blobInfo.blob().type + ";base64," + blobInfo.base64());
+      },
+      content_style: 'body { font-family:Arial,sans-serif; font-size:14px }',
+      setup: function(editor) {
+        // Κουμπί για αποθήκευση στο localStorage
+        editor.ui.registry.addButton('saveLocal', {
+          text: 'Αποθήκευση (localStorage)',
+          onAction: function() {
+            var content = editor.getContent();
+            localStorage.setItem('savedContent', content);
+            alert('Το περιεχόμενο αποθηκεύτηκε τοπικά στο localStorage!');
+          }
+        });
+        // Κουμπί για λήψη ως αρχείο HTML
+        editor.ui.registry.addButton('saveFile', {
+          text: 'Αποθήκευση ως αρχείο',
+          onAction: function() {
+            var content = editor.getContent();
+            var blob = new Blob([content], { type: 'text/html' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'editorContent.html';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+          }
+        });
+      }
+    });
+  </script>
+</head>
+<body>
+  <h2>Επεξεργαστής WYSIWYG με Ελληνικά & HTML View</h2>
+  <textarea id="editor">
+    <h3>Γράψε εδώ</h3>
+    <p>Αυτός ο editor υποστηρίζει μορφοποίηση, εισαγωγή εικόνας, HTML επεξεργασία, πίνακες και πολλά άλλα.</p>
+  </textarea>
+</body>
+</html>
+
