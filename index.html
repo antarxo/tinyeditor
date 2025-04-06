@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <title>HTML Editor - Raw Mode</title>
   <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js" referrerpolicy="origin"></script>
   <style>
     body {
       margin: 20px;
@@ -44,6 +46,9 @@
     toolbar: 'undo redo | styles | bold italic | alignleft aligncenter alignright | bullist numlist | link | code fullscreen',
     height: 600,
     paste_data_images: false,
+    entity_encoding: 'raw',
+    language: 'el',
+    language_url: 'https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js',
     images_upload_handler: function (blobInfo, success, failure) {
       failure("Η μεταφόρτωση εικόνων είναι απενεργοποιημένη.");
     },
@@ -64,12 +69,12 @@
     reader.onload = function(e) {
       tinymce.get('editor').setContent(e.target.result);
     };
-    reader.readAsText(file);
+    reader.readAsText(file, 'UTF-8');
   }
 
   function saveFile() {
     const content = tinymce.get("editor").getContent();
-    const blob = new Blob([content], { type: "text/html" });
+    const blob = new Blob([content], { type: "text/html;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "edited-file.html";
