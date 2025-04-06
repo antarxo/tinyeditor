@@ -108,7 +108,7 @@
     content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
     file_picker_callback: function (callback, value, meta) {
       if (meta.filetype === 'image') {
-        const path = prompt("Δώσε σχετικό path εικόνας (π.χ. assets/img.png):");
+        const path = prompt("path εικόνας (π.χ. assets/img.png):");
         if (path) callback(path, { alt: 'εικόνα' });
       }
     },
