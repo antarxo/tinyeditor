@@ -19,6 +19,10 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       position: relative;
       z-index: 1000;
     }
@@ -44,6 +48,9 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     button:hover, label:hover {
@@ -65,16 +72,16 @@
 <body>
 
 <div id="toolbar-buttons">
-  <button onclick="saveFile()">💾</button>
+  <button onclick="saveFile()">💾 Αποθήκευση</button>
   <label>
-    📂
+    📂 Άνοιγμα
     <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
   </label>
   <label>
-    🖼 
-    <input type="text" id="imagePath" placeholder="assets/img.png">
-    <button onclick="insertImagePath()">➕</button>
+    🖼 Εικόνα:
+    <input type="text" id="imagePath" placeholder="assets/image.jpg">
   </label>
+  <button onclick="insertImagePath()">➕ Εισαγωγή</button>
   <span id="status"></span>
 </div>
 
@@ -90,7 +97,7 @@
     entity_encoding: 'raw',
     language: 'el',
     language_url: 'https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js',
-    icons: 'default', // default icon set
+    icons: 'default',
     branding: false,
     file_picker_types: 'image',
     file_picker_callback: function (callback, value, meta) {
