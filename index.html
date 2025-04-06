@@ -15,12 +15,16 @@
 
     #toolbar-buttons {
       margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
       position: relative;
       z-index: 1000;
     }
 
     #status {
-      margin-top: 10px;
+      margin-left: 10px;
       color: green;
       font-weight: bold;
     }
@@ -33,9 +37,8 @@
     }
 
     button, label {
-      margin-top: 10px;
-      font-size: 16px;
-      padding: 10px 16px;
+      font-size: 15px;
+      padding: 8px 14px;
       background-color: #3498db;
       color: white;
       border: none;
@@ -48,30 +51,29 @@
     }
 
     input[type="file"], input[type="text"] {
-      margin-left: 5px;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
     }
 
     #imagePath {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      width: 300px;
+      width: 200px;
     }
   </style>
 </head>
 <body>
 
 <div id="toolbar-buttons">
-  <button onclick="saveFile()">💾 Αποθήκευση αρχείου</button>
+  <button onclick="saveFile()">💾</button>
   <label>
-    📂 Άνοιγμα:
+    📂
     <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
   </label>
-  <br><br>
   <label>
-    🖼 Path εικόνας:
-    <input type="text" id="imagePath" placeholder="π.χ. assets/image.jpg">
-    <button onclick="insertImagePath()">📥 Εισαγωγή εικόνας</button>
+    🖼 
+    <input type="text" id="imagePath" placeholder="assets/img.png">
+    <button onclick="insertImagePath()">➕</button>
   </label>
   <span id="status"></span>
 </div>
@@ -82,15 +84,14 @@
   tinymce.init({
     selector: '#editor',
     plugins: 'code link lists fullscreen image',
-    toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code fullscreen',
+    toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code fullscreen',
     height: 600,
     paste_data_images: false,
     entity_encoding: 'raw',
     language: 'el',
     language_url: 'https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js',
-    images_upload_handler: function (blobInfo, success, failure) {
-      failure("Η μεταφόρτωση εικόνων είναι απενεργοποιημένη.");
-    },
+    icons: 'default', // default icon set
+    branding: false,
     file_picker_types: 'image',
     file_picker_callback: function (callback, value, meta) {
       if (meta.filetype === 'image') {
@@ -103,7 +104,7 @@
   function insertImagePath() {
     const path = document.getElementById("imagePath").value.trim();
     if (path) {
-      const imgTag = `<img src="\${path}" alt="εικόνα" />`;
+      const imgTag = `<img src="${path}" alt="εικόνα" />`;
       tinymce.get('editor').execCommand('mceInsertContent', false, imgTag);
     }
   }
