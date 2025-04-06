@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -46,8 +47,15 @@
       background-color: #2980b9;
     }
 
-    input[type="file"] {
+    input[type="file"], input[type="text"] {
       margin-left: 5px;
+    }
+
+    #imagePath {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 300px;
     }
   </style>
 </head>
@@ -58,6 +66,12 @@
   <label>
     📂 Άνοιγμα:
     <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
+  </label>
+  <br><br>
+  <label>
+    🖼 Path εικόνας:
+    <input type="text" id="imagePath" placeholder="π.χ. assets/image.jpg">
+    <button onclick="insertImagePath()">📥 Εισαγωγή εικόνας</button>
   </label>
   <span id="status"></span>
 </div>
@@ -85,6 +99,14 @@
       }
     }
   });
+
+  function insertImagePath() {
+    const path = document.getElementById("imagePath").value.trim();
+    if (path) {
+      const imgTag = `<img src="\${path}" alt="εικόνα" />`;
+      tinymce.get('editor').execCommand('mceInsertContent', false, imgTag);
+    }
+  }
 
   function loadFile(event) {
     const file = event.target.files[0];
