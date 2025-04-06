@@ -5,6 +5,7 @@
   <title>HTML Editor</title>
   <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
   <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js" referrerpolicy="origin"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
       margin: 20px;
@@ -63,7 +64,7 @@
       font-size: 14px;
     }
 
-    #imagePath {
+    #imagePath, #iframePath {
       width: 200px;
     }
   </style>
@@ -81,6 +82,11 @@
     <input type="text" id="imagePath" placeholder="assets/image.jpg">
   </label>
   <button onclick="insertImagePath()">➕ Εισαγωγή</button>
+  <label>
+    🔗 Iframe:
+    <input type="text" id="iframePath" placeholder="https://example.com">
+  </label>
+  <button onclick="insertIframe()">📥 Εισαγωγή iframe</button>
   <span id="status"></span>
 </div>
 
@@ -99,11 +105,16 @@
     icons: 'default',
     branding: false,
     file_picker_types: 'image',
+    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
     file_picker_callback: function (callback, value, meta) {
       if (meta.filetype === 'image') {
         const path = prompt("Δώσε σχετικό path εικόνας (π.χ. assets/img.png):");
         if (path) callback(path, { alt: 'εικόνα' });
       }
+    },
+    setup: function(editor) {
+      editor.on('SetContent', () => MathJax.typesetPromise());
+      editor.on('Change', () => MathJax.typesetPromise());
     }
   });
 
@@ -112,6 +123,14 @@
     if (path) {
       const imgTag = `<img src="${path}" alt="εικόνα" />`;
       tinymce.get('editor').execCommand('mceInsertContent', false, imgTag);
+    }
+  }
+
+  function insertIframe() {
+    const path = document.getElementById("iframePath").value.trim();
+    if (path) {
+      const iframeTag = `<iframe src="${path}" width="600" height="400" frameborder="0" allowfullscreen></iframe>`;
+      tinymce.get('editor').execCommand('mceInsertContent', false, iframeTag);
     }
   }
 
