@@ -83,8 +83,10 @@
   <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
 
   <label>
-    🖼 Εικόνα:
-    <input type="text" id="imagePath" placeholder="assets/image.jpg">
+  🖼 Εικόνα:
+  <input type="text" id="imagePath" placeholder="assets/image.jpg" oninput="previewImage()">
+</label>
+<img id="imagePreview" src="" alt="preview" style="max-height:50px; display:none; border:1px solid #ccc; border-radius:4px;">
   </label>
   <button onclick="insertImagePath()">➕</button>
 
@@ -164,6 +166,19 @@
     document.getElementById("status").textContent = "✔ Αποθηκεύτηκε";
     setTimeout(() => document.getElementById("status").textContent = "", 3000);
   }
+  function previewImage() {
+  const url = document.getElementById("imagePath").value.trim();
+  const preview = document.getElementById("imagePreview");
+
+  if (url) {
+    preview.src = url;
+    preview.style.display = "inline-block";
+  } else {
+    preview.src = "";
+    preview.style.display = "none";
+  }
+}
+
 </script>
 
 </body>
