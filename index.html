@@ -5,7 +5,6 @@
   <title>HTML Editor</title>
   <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
   <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js" referrerpolicy="origin"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
       margin: 20px;
@@ -57,7 +56,11 @@
       background-color: #2980b9;
     }
 
-    input[type="file"], input[type="text"] {
+    input[type="file"] {
+      display: none;
+    }
+
+    input[type="text"] {
       padding: 6px;
       border-radius: 6px;
       border: 1px solid #ccc;
@@ -72,21 +75,25 @@
 <body>
 
 <div id="toolbar-buttons">
-  <button onclick="saveFile()">💾</button>
-  <label>
+  <button onclick="saveFile()">💾 Αποθήκευση</button>
+
+  <label for="fileLoader" style="cursor:pointer;">
     📂 Άνοιγμα
-    <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
   </label>
+  <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
+
   <label>
     🖼 Εικόνα:
     <input type="text" id="imagePath" placeholder="assets/image.jpg">
   </label>
   <button onclick="insertImagePath()">➕</button>
+
   <label>
     🔗 Iframe:
     <input type="text" id="iframePath" placeholder="https://example.com">
   </label>
   <button onclick="insertIframe()">➕</button>
+
   <span id="status"></span>
 </div>
 
@@ -98,23 +105,25 @@
     plugins: 'code link lists fullscreen image table preview media',
     toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat preview code fullscreen',
     height: 600,
-    paste_data_images: false,
-    entity_encoding: 'raw',
     language: 'el',
-    language_url: 'https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js',
-    icons: 'default',
     branding: false,
-    file_picker_types: 'image',
     content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
-    file_picker_callback: function (callback, value, meta) {
-      if (meta.filetype === 'image') {
-        const path = prompt("path εικόνας (π.χ. assets/img.png):");
-        if (path) callback(path, { alt: 'εικόνα' });
+    content_css: false,
+    content_scripts: ['https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'],
+    setup: function (editor) {
+      function typesetMath() {
+        try {
+          const iframeWin = editor.iframeElement.contentWindow;
+          if (iframeWin && iframeWin.MathJax) {
+            iframeWin.MathJax.typesetPromise();
+          }
+        } catch (e) {
+          console.error("MathJax error:", e);
+        }
       }
-    },
-    setup: function(editor) {
-      editor.on('SetContent', () => MathJax.typesetPromise());
-      editor.on('Change', () => MathJax.typesetPromise());
+      editor.on('SetContent', typesetMath);
+      editor.on('Change', typesetMath);
+      editor.on('ExecCommand', typesetMath);
     }
   });
 
