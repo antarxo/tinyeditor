@@ -5,6 +5,8 @@
   <title>HTML Editor</title>
   <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
   <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js" referrerpolicy="origin"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
       margin: 20px;
@@ -12,18 +14,41 @@
       background-color: #f4f4f4;
     }
 
+    #drawer-toggle {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1100;
+      padding: 8px 14px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 0 0 10px 10px;
+      cursor: pointer;
+    }
+
+    #toolbar-drawer {
+      position: fixed;
+      top: -1000px;
+      left: 0;
+      width: 100%;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      padding: 10px;
+      transition: top 0.3s ease;
+      z-index: 1000;
+    }
+
+    #toolbar-drawer.open {
+      top: 0;
+    }
+
     #toolbar-buttons {
-      margin-bottom: 10px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      background: #fff;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      position: relative;
-      z-index: 1000;
     }
 
     #status {
@@ -78,203 +103,155 @@
 </head>
 <body>
 
-<div id="toolbar-buttons">
-  <button onclick="saveFile()">💾 Αποθήκευση</button>
-
-  <label for="fileLoader" style="cursor:pointer;">
-    📂 Άνοιγμα
-  </label>
-  <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
-
-  <label>
-  🖼 Εικόνα:
-  <input type="text" id="imagePath" placeholder="assets/image.jpg" oninput="previewImage()">
-</label>
-<img id="imagePreview" src="" alt="preview" style="max-height:50px; display:none; border:1px solid #ccc; border-radius:4px;">
-  </label>
-  <button onclick="insertImagePath()">➕</button>
-
-  <label>
-    🔗 Iframe:
-    <input type="text" id="iframePath" placeholder="https://example.com">
-  </label>
-  <button onclick="insertIframe()">➕</button>
-
-  <label>
-    📄 Μέγεθος:
-    <select id="pageSizeSelector" onchange="changePageSettings()">
-      <option value="A4">A4</option>
-      <option value="Letter">Letter</option>
-      <option value="Custom">Προσαρμοσμένο</option>
-    </select>
-  </label>
-
-  <label>↕ Προσανατολισμός:
-    <select id="orientationSelector" onchange="changePageSettings()">
-      <option value="portrait">Κάθετος</option>
-      <option value="landscape">Οριζόντιος</option>
-    </select>
-  </label>
-
-  <label>📐 Περιθώρια:
-    <select id="marginSelector" onchange="changePageSettings()">
-      <option value="normal">Κανονικά</option>
-      <option value="narrow">Στενά</option>
-      <option value="wide">Ευρεία</option>
-      <option value="custom">Προσαρμοσμένα</option>
-    </select>
-  </label>
-
-  <label>⬆ <input type="number" id="marginTop" min="0" max="200" value="20" onchange="changePageSettings()" style="width:60px;"> px</label>
-  <label>⬇ <input type="number" id="marginBottom" min="0" max="200" value="20" onchange="changePageSettings()" style="width:60px;"> px</label>
-  <label>⬅ <input type="number" id="marginLeft" min="0" max="200" value="20" onchange="changePageSettings()" style="width:60px;"> px</label>
-  <label>➡ <input type="number" id="marginRight" min="0" max="200" value="20" onchange="changePageSettings()" style="width:60px;"> px</label>
-
-  <label>📏 Πλάτος:
-    <input type="number" id="customWidth" min="100" max="3000" value="800" onchange="changePageSettings()" style="width:70px;"> px
-  </label>
-  <label>📏 Ύψος:
-    <input type="number" id="customHeight" min="100" max="3000" value="1000" onchange="changePageSettings()" style="width:70px;"> px
-  </label>
-
-  <span id="status"></span>
+<button id="drawer-toggle" onclick="toggleDrawer()">🔽 Επιλογές</button>
+<div id="toolbar-drawer">
+  <div id="toolbar-buttons">
+    <button onclick="insertLatex()">∑ Τύπος</button>
+    <label>
+      📷 Εισαγωγή εικόνας
+      <input type="file" accept="image/*" onchange="insertImage(event)">
+    </label>
+    <input type="text" id="imagePath" placeholder="Επικόλλησε URL εικόνας">
+    <button onclick="insertImageFromURL()">➕ Εικόνα από URL</button>
+    <label>
+      🌐 Εισαγωγή iframe
+      <input type="file" accept="text/html" onchange="insertIframe(event)">
+    </label>
+    <input type="text" id="iframePath" placeholder="Επικόλλησε URL iframe">
+    <button onclick="insertIframeFromURL()">➕ Iframe από URL</button>
+    <label>
+      📏 Μέγεθος σελίδας:
+      <select id="pageSize" onchange="setPageSize()">
+        <option value="A4">A4</option>
+        <option value="A5">A5</option>
+        <option value="Letter">Letter</option>
+        <option value="Custom">Προσαρμοσμένο</option>
+      </select>
+    </label>
+    <label>
+      ➕ Πλάτος (px):
+      <input type="number" id="customWidth" value="800" min="100" onchange="setPageSize()">
+    </label>
+    <label>
+      ➕ Ύψος (px):
+      <input type="number" id="customHeight" value="1000" min="100" onchange="setPageSize()">
+    </label>
+    <label>
+      📐 Περιθώρια:
+      <input type="number" id="marginTop" placeholder="Πάνω" value="20" onchange="setMargins()">
+      <input type="number" id="marginRight" placeholder="Δεξιά" value="20" onchange="setMargins()">
+      <input type="number" id="marginBottom" placeholder="Κάτω" value="20" onchange="setMargins()">
+      <input type="number" id="marginLeft" placeholder="Αριστερά" value="20" onchange="setMargins()">
+    </label>
+    <label>
+      ↕ Προσανατολισμός:
+      <select id="orientation" onchange="setOrientation()">
+        <option value="portrait">Κατακόρυφο</option>
+        <option value="landscape">Οριζόντιο</option>
+      </select>
+    </label>
+  </div>
 </div>
 
 <textarea id="editor"></textarea>
 
 <script>
+  function toggleDrawer() {
+    const drawer = document.getElementById('toolbar-drawer');
+    drawer.classList.toggle('open');
+  }
+
+  function insertLatex() {
+    const formula = prompt("Γράψε τον τύπο LaTeX:", "E = mc^2");
+    if (formula) {
+      tinymce.activeEditor.execCommand('mceInsertContent', false, `\\[${formula}\\]`);
+      MathJax.typesetPromise();
+    }
+  }
+
+  function insertImage(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      tinymce.activeEditor.insertContent(`<img src="${e.target.result}" alt="εικόνα">`);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function insertImageFromURL() {
+    const url = document.getElementById('imagePath').value;
+    if (url) {
+      tinymce.activeEditor.insertContent(`<img src="${url}" alt="εικόνα από URL">`);
+    }
+  }
+
+  function insertIframe(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      tinymce.activeEditor.insertContent(`<iframe srcdoc="${e.target.result}" width="100%" height="400"></iframe>`);
+    };
+    reader.readAsText(file);
+  }
+
+  function insertIframeFromURL() {
+    const url = document.getElementById('iframePath').value;
+    if (url) {
+      tinymce.activeEditor.insertContent(`<iframe src="${url}" width="100%" height="400"></iframe>`);
+    }
+  }
+
+  function setPageSize() {
+    const size = document.getElementById('pageSize').value;
+    const editorBody = tinymce.activeEditor.getBody();
+    let width, height;
+    if (size === 'A4') {
+      width = 794; height = 1123;
+    } else if (size === 'A5') {
+      width = 559; height = 794;
+    } else if (size === 'Letter') {
+      width = 816; height = 1056;
+    } else {
+      width = parseInt(document.getElementById('customWidth').value);
+      height = parseInt(document.getElementById('customHeight').value);
+    }
+    editorBody.style.width = width + 'px';
+    editorBody.style.height = height + 'px';
+  }
+
+  function setMargins() {
+    const editorBody = tinymce.activeEditor.getBody();
+    const top = document.getElementById('marginTop').value + 'px';
+    const right = document.getElementById('marginRight').value + 'px';
+    const bottom = document.getElementById('marginBottom').value + 'px';
+    const left = document.getElementById('marginLeft').value + 'px';
+    editorBody.style.padding = `${top} ${right} ${bottom} ${left}`;
+  }
+
+  function setOrientation() {
+    const orientation = document.getElementById('orientation').value;
+    const editorBody = tinymce.activeEditor.getBody();
+    if (orientation === 'landscape') {
+      editorBody.style.transform = 'rotate(90deg)';
+    } else {
+      editorBody.style.transform = 'none';
+    }
+  }
+
   tinymce.init({
     selector: '#editor',
-    plugins: 'code link lists fullscreen image table preview media',
-    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat preview code fullscreen',
-    height: 600,
     language: 'el',
-    branding: false,
-    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
-    content_css: false,
-    content_scripts: ['https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'],
+    height: 600,
     setup: function (editor) {
-      function typesetMath() {
-        try {
-          const iframeWin = editor.iframeElement?.contentWindow;
-          if (iframeWin && iframeWin.MathJax) {
-            iframeWin.MathJax.typesetPromise();
-          }
-        } catch (e) {
-          console.error("MathJax error:", e);
-        }
-      }
-      editor.on('SetContent', typesetMath);
-      editor.on('Change', typesetMath);
-      editor.on('ExecCommand', typesetMath);
-      editor.on('init', () => {
-        changePageSettings();
+      editor.on('Change KeyUp', function () {
+        MathJax.typesetPromise();
+      });
+      editor.on('init', function () {
+        setPageSize();
+        setMargins();
       });
     }
   });
-
-  function insertImagePath() {
-    const path = document.getElementById("imagePath").value.trim();
-    if (path) {
-      const imgTag = `<img src="${path}" alt="εικόνα" />`;
-      tinymce.get('editor').execCommand('mceInsertContent', false, imgTag);
-    }
-  }
-
-  function insertIframe() {
-    const path = document.getElementById("iframePath").value.trim();
-    if (path) {
-      const iframeTag = `<iframe src="${path}" width="600" height="400" frameborder="0" allowfullscreen></iframe>`;
-      tinymce.get('editor').execCommand('mceInsertContent', false, iframeTag);
-    }
-  }
-
-  function loadFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      tinymce.get('editor').setContent(e.target.result);
-    };
-    reader.readAsText(file, 'UTF-8');
-  }
-
-  function saveFile() {
-    const content = tinymce.get("editor").getContent();
-    const blob = new Blob([content], { type: "text/html;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "edited-file.html";
-    a.click();
-    document.getElementById("status").textContent = "✔ Αποθηκεύτηκε";
-    setTimeout(() => document.getElementById("status").textContent = "", 3000);
-  }
-
-  function previewImage() {
-    const url = document.getElementById("imagePath").value.trim();
-    const preview = document.getElementById("imagePreview");
-
-    if (url) {
-      preview.src = url;
-      preview.style.display = "inline-block";
-    } else {
-      preview.src = "";
-      preview.style.display = "none";
-    }
-  }
-
-  function changePageSettings() {
-    const size = document.getElementById('pageSizeSelector').value;
-    const orientation = document.getElementById('orientationSelector').value;
-    const margin = document.getElementById('marginSelector').value;
-    const editor = tinymce.get('editor');
-    const iframe = editor ? editor.iframeElement : null;
-    if (!iframe) return;
-
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    const body = doc.body;
-
-    let width, height;
-
-    if (size === 'Custom') {
-      width = document.getElementById('customWidth').value + 'px';
-      height = document.getElementById('customHeight').value + 'px';
-    } else {
-      switch (size) {
-        case 'A4':
-          width = orientation === 'portrait' ? '210mm' : '297mm';
-          height = orientation === 'portrait' ? '297mm' : '210mm';
-          break;
-        case 'Letter':
-          width = orientation === 'portrait' ? '216mm' : '279mm';
-          height = orientation === 'portrait' ? '279mm' : '216mm';
-          break;
-      }
-    }
-
-    let padding;
-    if (margin === 'custom') {
-      const top = document.getElementById('marginTop').value + 'px';
-      const right = document.getElementById('marginRight').value + 'px';
-      const bottom = document.getElementById('marginBottom').value + 'px';
-      const left = document.getElementById('marginLeft').value + 'px';
-      padding = `${top} ${right} ${bottom} ${left}`;
-    } else {
-      switch (margin) {
-        case 'narrow': padding = '10px'; break;
-        case 'wide': padding = '50px'; break;
-        default: padding = '20px';
-      }
-    }
-
-    body.style.width = width;
-    body.style.minHeight = height;
-    body.style.margin = '0 auto';
-    body.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
-    body.style.background = '#fff';
-    body.style.padding = padding;
-  }
 </script>
 
 </body>
