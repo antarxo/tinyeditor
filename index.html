@@ -2,23 +2,23 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>HTML Editor με Οικονομία Ύψους & Custom Λειτουργίες</title>
+  <title>HTML Editor - Οικονομία Ύψους</title>
   <!-- TinyMCE -->
   <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
   <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js" referrerpolicy="origin"></script>
-  <!-- MathJax για μαθηματικά -->
+  <!-- MathJax -->
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
       margin: 20px;
       font-family: "Segoe UI", sans-serif;
-      background-color: #f4f4f4;
+      background: #f4f4f4;
     }
-    /* Στυλ για το Drawer (στα δεξιά όπως στο αρχικό editor.html) */
+    /* Drawer στα δεξιά */
     #toolbar-drawer {
       position: fixed;
       top: 50px;
-      right: -320px; /* κρυφό αρχικά */
+      right: -320px;
       min-width: 320px;
       background: #fff;
       border: 2px solid #ccc;
@@ -28,158 +28,143 @@
       transition: right 0.3s ease;
       z-index: 1000;
     }
-    #toolbar-drawer.open {
-      right: 0;
-    }
-    /* Κάθε control group να καταλαμβάνει ολόκληρο το πλάτος */
+    #toolbar-drawer.open { right: 0; }
+    /* Κάθε control group πλήρους πλάτους */
     #toolbar-drawer .control-group {
       margin-bottom: 10px;
       width: 100%;
     }
-    #toolbar-drawer .control-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    #toolbar-drawer .control-group input,
-    #toolbar-drawer .control-group select,
-    #toolbar-drawer .control-group button {
-      padding: 8px;
-      font-size: 14px;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    /* Νέες κλάσεις για οριζόντιες σειρές */
+    /* Οριζόντιες σειρές με ετικέτα και επιλογή */
     .row {
       display: flex;
       gap: 10px;
+      align-items: center;
       flex-wrap: wrap;
     }
     .row label {
-      flex: 1 1 calc(50% - 10px);
-      display: flex;
-      flex-direction: column;
       font-weight: bold;
+      white-space: nowrap;
     }
-    .row label input {
-      width: 100%;
+    .row input, .row select, .row button {
+      padding: 6px;
+      font-size: 13px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      flex: 1;
       box-sizing: border-box;
     }
-    /* Toggle κουμπί για το drawer */
+    /* Toggle Button */
     #drawer-toggle {
       position: fixed;
       top: 50px;
       right: 0;
       z-index: 1100;
       padding: 10px 14px;
-      background-color: #3498db;
+      background: #3498db;
       color: #fff;
       border: none;
       border-radius: 8px 0 0 8px;
       cursor: pointer;
       transition: right 0.3s ease;
     }
-    /* Στυλ για το TinyMCE editor */
+    /* Editor */
     textarea, #editor_ifr {
       width: 100%;
       border: 2px solid #ccc;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    /* Επιπλέον στυλ για προεπισκόπηση εικόνας */
+    /* Image preview */
     #imagePreview {
       max-height: 50px;
-      display: block;
       margin-top: 5px;
       border: 1px solid #ccc;
       border-radius: 4px;
+      display: none;
     }
   </style>
 </head>
 <body>
 
-<!-- Toggle Button για το Drawer -->
+<!-- Toggle Drawer -->
 <button id="drawer-toggle" onclick="toggleDrawer()">Επιλογές</button>
 
-<!-- Drawer με τις ρυθμίσεις και τις custom λειτουργίες -->
+<!-- Drawer με ρυθμίσεις -->
 <div id="toolbar-drawer">
-  <!-- Αποθήκευση / Άνοιγμα αρχείου -->
-  <div class="control-group">
-    <button onclick="saveFile()">💾 Αποθήκευση</button>
-  </div>
-  <div class="control-group">
-    <label for="fileLoader" style="cursor:pointer;">📂 Άνοιγμα Αρχείου</label>
+  <!-- Αποθήκευση/Άνοιγμα -->
+  <div class="control-group row">
+    <button onclick="saveFile()">💾</button>
+    <label for="fileLoader" style="cursor:pointer;">📂</label>
     <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
   </div>
-  <!-- Εισαγωγή εικόνας -->
-  <div class="control-group">
-    <label>🖼 Εικόνα (διαδρομή):</label>
-    <input type="text" id="imagePath" placeholder="assets/image.jpg" oninput="previewImage()">
-    <button onclick="insertImagePath()">➕ Εισαγωγή εικόνας</button>
-    <img id="imagePreview" src="" alt="preview" style="display:none;">
+  <!-- Εικόνα -->
+  <div class="control-group row">
+    <label>🖼</label>
+    <input type="text" id="imagePath" placeholder="assets/img.jpg" oninput="previewImage()">
+    <button onclick="insertImagePath()">+</button>
   </div>
-  <!-- Εισαγωγή Iframe -->
-  <div class="control-group">
-    <label>🔗 Iframe (διαδρομή):</label>
-    <input type="text" id="iframePath" placeholder="https://example.com">
-    <button onclick="insertIframe()">➕ Εισαγωγή Iframe</button>
+  <div class="control-group row">
+    <img id="imagePreview" src="" alt="preview">
   </div>
-  <!-- Εισαγωγή LaTeX -->
-  <div class="control-group">
-    <button onclick="insertLaTeX()">∑ Εισαγωγή LaTeX</button>
+  <!-- Iframe -->
+  <div class="control-group row">
+    <label>🔗</label>
+    <input type="text" id="iframePath" placeholder="https://...">
+    <button onclick="insertIframe()">+</button>
+  </div>
+  <!-- LaTeX -->
+  <div class="control-group row">
+    <button onclick="insertLaTeX()">∑</button>
   </div>
   <!-- Ρυθμίσεις Σελίδας -->
-  <div class="control-group">
-    <label>📄 Μέγεθος Σελίδας:</label>
+  <div class="control-group row">
+    <label>Μέγεθος</label>
     <select id="pageSizeSelector" onchange="changePageSettings()">
       <option value="A4">A4</option>
-      <option value="Letter">Letter</option>
-      <option value="Custom">Προσαρμοσμένο</option>
+      <option value="Letter">Let</option>
+      <option value="Custom">Cust</option>
     </select>
-  </div>
-  <div class="control-group">
-    <label>↕ Προσανατολισμός:</label>
+    <label>Προσαν.</label>
     <select id="orientationSelector" onchange="changePageSettings()">
-      <option value="portrait">Κάθετος</option>
-      <option value="landscape">Οριζόντιος</option>
+      <option value="portrait">Καθ</option>
+      <option value="landscape">Οριζ</option>
     </select>
   </div>
-  <div class="control-group">
-    <label>📐 Περιθώρια (preset):</label>
+  <div class="control-group row">
+    <label>Περιθ.</label>
     <select id="marginSelector" onchange="changePageSettings()">
-      <option value="normal">Κανονικά</option>
-      <option value="narrow">Στενά</option>
-      <option value="wide">Ευρεία</option>
-      <option value="custom">Προσαρμοσμένα</option>
+      <option value="normal">Κανον</option>
+      <option value="narrow">Στεν</option>
+      <option value="wide">Ευρ</option>
+      <option value="custom">Cust</option>
     </select>
   </div>
-  <!-- Ρυθμίσεις περιθωρίων: δύο επιλογές ανά σειρά -->
+  <!-- Custom Περιθώρια: δύο ανά σειρά -->
   <div class="control-group" id="custom-margins">
     <div class="row">
-      <label>Άνω περιθώριο (px):
+      <label>Άνω
         <input type="number" id="marginTop" value="20" min="0" max="200" onchange="changePageSettings()">
       </label>
-      <label>Κάτω περιθώριο (px):
+      <label>Κάτω
         <input type="number" id="marginBottom" value="20" min="0" max="200" onchange="changePageSettings()">
       </label>
     </div>
     <div class="row">
-      <label>Αριστερό περιθώριο (px):
+      <label>Αριστερό
         <input type="number" id="marginLeft" value="20" min="0" max="200" onchange="changePageSettings()">
       </label>
-      <label>Δεξί περιθώριο (px):
+      <label>Δεξί
         <input type="number" id="marginRight" value="20" min="0" max="200" onchange="changePageSettings()">
       </label>
     </div>
   </div>
-  <!-- Ρυθμίσεις μεγέθους σελίδας: πλάτος και ύψος στην ίδια σειρά -->
+  <!-- Custom Μέγεθος: Πλάτος και Ύψος στην ίδια σειρά -->
   <div class="control-group" id="custom-size-group">
     <div class="row">
-      <label>📏 Πλάτος (px):
+      <label>Πλάτος
         <input type="number" id="customWidth" value="800" min="100" max="3000" onchange="changePageSettings()">
       </label>
-      <label>📏 Ύψος (px):
+      <label>Ύψος
         <input type="number" id="customHeight" value="1000" min="100" max="3000" onchange="changePageSettings()">
       </label>
     </div>
@@ -193,13 +178,12 @@
 <textarea id="editor"></textarea>
 
 <script>
-  // Toggle του Drawer
+  // Toggle Drawer
   function toggleDrawer() {
-    const drawer = document.getElementById('toolbar-drawer');
-    drawer.classList.toggle('open');
+    document.getElementById('toolbar-drawer').classList.toggle('open');
   }
   
-  // TinyMCE αρχικοποίηση
+  // TinyMCE Init
   tinymce.init({
     selector: '#editor',
     plugins: 'code link lists fullscreen image table preview media',
@@ -222,22 +206,20 @@
         }
       }
       editor.on('SetContent Change ExecCommand', typesetMath);
-      editor.on('init', () => {
-        changePageSettings(); // Εφαρμογή ρυθμίσεων κατά την εκκίνηση
-      });
+      editor.on('init', () => { changePageSettings(); });
     }
   });
   
-  // Εισαγωγή εικόνας
+  // Εικόνα
   function insertImagePath() {
     const path = document.getElementById("imagePath").value.trim();
     if (path) {
-      const imgTag = `<img src="${path}" alt="εικόνα" />`;
+      const imgTag = `<img src="${path}" alt="img" />`;
       tinymce.get('editor').execCommand('mceInsertContent', false, imgTag);
     }
   }
   
-  // Εισαγωγή Iframe
+  // Iframe
   function insertIframe() {
     const path = document.getElementById("iframePath").value.trim();
     if (path) {
@@ -246,9 +228,9 @@
     }
   }
   
-  // Εισαγωγή LaTeX τύπου
+  // LaTeX
   function insertLaTeX() {
-    const latex = prompt("Εισάγετε τον LaTeX τύπο (χωρίς τα delimiters):");
+    const latex = prompt("LaTeX:");
     if (latex) {
       const latexTag = `\\[${latex}\\]`;
       tinymce.get('editor').execCommand('mceInsertContent', false, latexTag);
@@ -274,7 +256,7 @@
     a.href = URL.createObjectURL(blob);
     a.download = "edited-file.html";
     a.click();
-    document.getElementById("status").textContent = "✔ Αποθηκεύτηκε";
+    document.getElementById("status").textContent = "✔";
     setTimeout(() => document.getElementById("status").textContent = "", 3000);
   }
   
@@ -291,60 +273,51 @@
     }
   }
   
-  // Εφαρμογή ρυθμίσεων σελίδας μέσα στο iframe του TinyMCE
+  // Ρυθμίσεις σελίδας
   function changePageSettings() {
     const size = document.getElementById('pageSizeSelector').value;
-    const orientation = document.getElementById('orientationSelector').value;
+    const orient = document.getElementById('orientationSelector').value;
     const margin = document.getElementById('marginSelector').value;
     const editor = tinymce.get('editor');
     const iframe = editor ? editor.iframeElement : null;
     if (!iframe) return;
-  
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     const body = doc.body;
-  
+    
     let width, height;
     if (size === 'Custom') {
       width = document.getElementById('customWidth').value + 'px';
       height = document.getElementById('customHeight').value + 'px';
     } else {
-      switch (size) {
-        case 'A4':
-          width = orientation === 'portrait' ? '210mm' : '297mm';
-          height = orientation === 'portrait' ? '297mm' : '210mm';
-          break;
-        case 'Letter':
-          width = orientation === 'portrait' ? '216mm' : '279mm';
-          height = orientation === 'portrait' ? '279mm' : '216mm';
-          break;
+      if(size==='A4'){
+        width = orient==='portrait'?'210mm':'297mm';
+        height = orient==='portrait'?'297mm':'210mm';
+      } else if(size==='Letter'){
+        width = orient==='portrait'?'216mm':'279mm';
+        height = orient==='portrait'?'279mm':'216mm';
       }
     }
-  
+    
     let padding;
-    if (margin === 'custom') {
-      const top = document.getElementById('marginTop').value + 'px';
-      const right = document.getElementById('marginRight').value + 'px';
-      const bottom = document.getElementById('marginBottom').value + 'px';
-      const left = document.getElementById('marginLeft').value + 'px';
+    if(margin==='custom'){
+      const top = document.getElementById('marginTop').value+'px';
+      const right = document.getElementById('marginRight').value+'px';
+      const bottom = document.getElementById('marginBottom').value+'px';
+      const left = document.getElementById('marginLeft').value+'px';
       padding = `${top} ${right} ${bottom} ${left}`;
     } else {
-      switch (margin) {
-        case 'narrow': padding = '10px'; break;
-        case 'wide': padding = '50px'; break;
-        default: padding = '20px';
-      }
+      padding = margin==='narrow'?'10px': margin==='wide'?'50px':'20px';
     }
-  
+    
     body.style.width = width;
     body.style.minHeight = height;
     body.style.margin = '0 auto';
     body.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
     body.style.background = '#fff';
     body.style.padding = padding;
-  
-    // Εμφάνιση/Απόκρυψη των custom πεδίων με βάση την επιλογή
-    document.getElementById('custom-margins').style.display = (margin === 'custom') ? 'block' : 'none';
-    document.getElementById('custom-size-group').style.display = (size === 'Custom') ? 'block' : 'none';
+    
+    document.getElementById('custom-margins').style.display = (margin==='custom')?'block':'none';
+    document.getElementById('custom-size-group').style.display = (size==='Custom')?'block':'none';
   }
 </script>
 
