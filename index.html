@@ -10,21 +10,21 @@
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
-      margin: 20px;
+      margin: 10px;
       font-family: "Segoe UI", sans-serif;
       background: #f4f4f4;
     }
     /* Drawer στα δεξιά, κρυμμένο αφήνοντας 5px ορατά */
     #toolbar-drawer {
       position: fixed;
-      top: 50px;
+      top: 40px;
       right: -595px; /* 320px πλάτος - 5px = -315px */
       width: 600px;
       background: #fff;
       border: 2px solid #ccc;
       border-radius: 8px 0 0 8px;
       box-shadow: -4px 4px 12px rgba(0,0,0,0.2);
-      padding: 15px;
+      padding: 10px;
       transition: right 0.3s ease;
       z-index: 1000;
     }
@@ -47,7 +47,7 @@
     }
     .row input, .row select, .row button {
       padding: 6px;
-      font-size: 13px;
+      font-size: 12px;
       border: 1px solid #ccc;
       border-radius: 4px;
       flex: 1;
@@ -99,7 +99,7 @@
   </div>
   <!-- Εικόνα -->
   <div class="control-group row">
-    <label>🖼</label>
+    <label>🖼Εικονα</label>
     <input type="text" id="imagePath" placeholder="assets/img.jpg" oninput="previewImage()">
     <button onclick="insertImagePath()">+</button>
   </div>
@@ -108,13 +108,13 @@
   </div>
   <!-- Iframe -->
   <div class="control-group row">
-    <label>🔗</label>
+    <label>🔗iframe</label>
     <input type="text" id="iframePath" placeholder="https://...">
     <button onclick="insertIframe()">+</button>
   </div>
   <!-- LaTeX -->
   <div class="control-group row">
-    <button onclick="insertLaTeX()">∑</button>
+    <button onclick="insertLaTeX()">∑Latex</button>
   </div>
   <!-- Ρυθμίσεις Σελίδας -->
   <div class="control-group row">
@@ -198,7 +198,7 @@
     height: 620,
     language: 'el',
     branding: false,
-    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
+    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }',
     content_css: false,
     content_scripts: ['https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'],
     setup: function (editor) {
