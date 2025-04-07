@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>HTML Editor με Πλούσιο Toolbar & Custom Λειτουργίες</title>
+  <title>HTML Editor με Οικονομία Ύψους & Custom Λειτουργίες</title>
   <!-- TinyMCE -->
   <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
   <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js" referrerpolicy="origin"></script>
@@ -14,13 +14,12 @@
       font-family: "Segoe UI", sans-serif;
       background-color: #f4f4f4;
     }
-    /* Στυλ για το Drawer (διατηρούμε τη θέση στα δεξιά όπως στο αρχικό editor.html)
-       και κάθε επιλογή να καταλαμβάνει ολόκληρη τη σειρά */
+    /* Στυλ για το Drawer (στα δεξιά όπως στο αρχικό editor.html) */
     #toolbar-drawer {
       position: fixed;
       top: 50px;
       right: -320px; /* κρυφό αρχικά */
-      min-width: 300px;
+      min-width: 320px;
       background: #fff;
       border: 2px solid #ccc;
       border-radius: 8px 0 0 8px;
@@ -32,7 +31,7 @@
     #toolbar-drawer.open {
       right: 0;
     }
-    /* Κάνουμε το περιεχόμενο του drawer να εμφανίζεται ως μπλοκ ώστε κάθε επιλογή να έχει δική της σειρά */
+    /* Κάθε control group να καταλαμβάνει ολόκληρο το πλάτος */
     #toolbar-drawer .control-group {
       margin-bottom: 10px;
       width: 100%;
@@ -45,14 +44,29 @@
     #toolbar-drawer .control-group input,
     #toolbar-drawer .control-group select,
     #toolbar-drawer .control-group button {
-      width: 100%;
       padding: 8px;
       font-size: 14px;
       box-sizing: border-box;
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    /* Toggle κουμπί για το drawer παραμένει σταθερό */
+    /* Νέες κλάσεις για οριζόντιες σειρές */
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .row label {
+      flex: 1 1 calc(50% - 10px);
+      display: flex;
+      flex-direction: column;
+      font-weight: bold;
+    }
+    .row label input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    /* Toggle κουμπί για το drawer */
     #drawer-toggle {
       position: fixed;
       top: 50px;
@@ -73,7 +87,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    /* Επιπλέον στυλ για στοιχεία που προβάλλουν preview εικόνας */
+    /* Επιπλέον στυλ για προεπισκόπηση εικόνας */
     #imagePreview {
       max-height: 50px;
       display: block;
@@ -88,7 +102,7 @@
 <!-- Toggle Button για το Drawer -->
 <button id="drawer-toggle" onclick="toggleDrawer()">Επιλογές</button>
 
-<!-- Drawer με τις ρυθμίσεις και τα custom κουμπιά -->
+<!-- Drawer με τις ρυθμίσεις και τις custom λειτουργίες -->
 <div id="toolbar-drawer">
   <!-- Αποθήκευση / Άνοιγμα αρχείου -->
   <div class="control-group">
@@ -140,23 +154,35 @@
       <option value="custom">Προσαρμοσμένα</option>
     </select>
   </div>
-  <!-- Εισαγωγή custom τιμών για περιθώρια -->
+  <!-- Ρυθμίσεις περιθωρίων: δύο επιλογές ανά σειρά -->
   <div class="control-group" id="custom-margins">
-    <label>Άνω περιθώριο (px):</label>
-    <input type="number" id="marginTop" value="20" min="0" max="200" onchange="changePageSettings()">
-    <label>Κάτω περιθώριο (px):</label>
-    <input type="number" id="marginBottom" value="20" min="0" max="200" onchange="changePageSettings()">
-    <label>Αριστερό περιθώριο (px):</label>
-    <input type="number" id="marginLeft" value="20" min="0" max="200" onchange="changePageSettings()">
-    <label>Δεξί περιθώριο (px):</label>
-    <input type="number" id="marginRight" value="20" min="0" max="200" onchange="changePageSettings()">
+    <div class="row">
+      <label>Άνω περιθώριο (px):
+        <input type="number" id="marginTop" value="20" min="0" max="200" onchange="changePageSettings()">
+      </label>
+      <label>Κάτω περιθώριο (px):
+        <input type="number" id="marginBottom" value="20" min="0" max="200" onchange="changePageSettings()">
+      </label>
+    </div>
+    <div class="row">
+      <label>Αριστερό περιθώριο (px):
+        <input type="number" id="marginLeft" value="20" min="0" max="200" onchange="changePageSettings()">
+      </label>
+      <label>Δεξί περιθώριο (px):
+        <input type="number" id="marginRight" value="20" min="0" max="200" onchange="changePageSettings()">
+      </label>
+    </div>
   </div>
-  <!-- Εισαγωγή custom τιμών για μέγεθος σελίδας -->
+  <!-- Ρυθμίσεις μεγέθους σελίδας: πλάτος και ύψος στην ίδια σειρά -->
   <div class="control-group" id="custom-size-group">
-    <label>📏 Πλάτος (px):</label>
-    <input type="number" id="customWidth" value="800" min="100" max="3000" onchange="changePageSettings()">
-    <label>📏 Ύψος (px):</label>
-    <input type="number" id="customHeight" value="1000" min="100" max="3000" onchange="changePageSettings()">
+    <div class="row">
+      <label>📏 Πλάτος (px):
+        <input type="number" id="customWidth" value="800" min="100" max="3000" onchange="changePageSettings()">
+      </label>
+      <label>📏 Ύψος (px):
+        <input type="number" id="customHeight" value="1000" min="100" max="3000" onchange="changePageSettings()">
+      </label>
+    </div>
   </div>
   <div class="control-group">
     <span id="status"></span>
