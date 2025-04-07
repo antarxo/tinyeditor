@@ -16,9 +16,9 @@
     }
     /* Drawer στα δεξιά, κρυμμένο αφήνοντας 5px ορατά */
     #toolbar-drawer {
-      height: 350px;
+       position: fixed; 
+	  height: 350px;
       width: 320px;
-      position: fixed;
       top: 120px;
       right: -315px; /* 320px πλάτος - 5px = -315px */  
       background: #fff;
@@ -94,13 +94,13 @@
 <div id="toolbar-drawer">
   <!-- Αποθήκευση/Άνοιγμα -->
   <div class="control-group row">
-    <button onclick="saveFile()">💾</button>
-    <label for="fileLoader" style="cursor:pointer;">📂</label>
+    <button onclick="saveFile()">💾 Αποθήκευση</button>
+    <label for="fileLoader" style="cursor:pointer;">📂Άνοιγμα</label>
     <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
   </div>
   <!-- Εικόνα -->
   <div class="control-group row">
-    <label>🖼Εικονα</label>
+    <label>🖼Εικόνα</label>
     <input type="text" id="imagePath" placeholder="assets/img.jpg" oninput="previewImage()">
     <button onclick="insertImagePath()">+</button>
   </div>
@@ -122,22 +122,22 @@
     <label>Μέγεθος</label>
     <select id="pageSizeSelector" onchange="changePageSettings()">
       <option value="A4">A4</option>
-      <option value="Letter">Let</option>
-      <option value="Custom">Cust</option>
+      <option value="Letter">Letter</option>
+      <option value="Custom">Custom</option>
     </select>
-    <label>Προσαν.</label>
+    <label>Προσανατ.</label>
     <select id="orientationSelector" onchange="changePageSettings()">
-      <option value="portrait">Καθ</option>
-      <option value="landscape">Οριζ</option>
+      <option value="portrait">Καθετος</option>
+      <option value="landscape">Οριζόντιος</option>
     </select>
   </div>
   <div class="control-group row">
-    <label>Περιθ.</label>
+    <label>Περιθώρια</label>
     <select id="marginSelector" onchange="changePageSettings()">
-      <option value="normal">Κανον</option>
-      <option value="narrow">Στεν</option>
-      <option value="wide">Ευρ</option>
-      <option value="custom">Cust</option>
+      <option value="normal">Κανονικά</option>
+      <option value="narrow">Στενά</option>
+      <option value="wide">Ευρέα</option>
+      <option value="custom">Custom</option>
     </select>
   </div>
   <!-- Custom Περιθώρια: δύο ανά σειρά -->
@@ -166,7 +166,7 @@
         <input type="number" id="customWidth" value="800" min="100" max="3000" onchange="changePageSettings()">
       </label>
       <label>Ύψος
-        <input type="number" id="customHeight" value="1000" min="100" max="3000" onchange="changePageSettings()">
+        <input type="number" id="customHeight" value="400" min="100" max="3000" onchange="changePageSettings()">
       </label>
     </div>
   </div>
@@ -187,7 +187,7 @@
     if (drawer.classList.contains('open')) {
       toggleBtn.style.right = drawer.offsetWidth + 'px';
     } else {
-      toggleBtn.style.right = '5px';
+      toggleBtn.style.right = '0px';
     }
   }
   
