@@ -14,11 +14,11 @@
       font-family: "Segoe UI", sans-serif;
       background: #f4f4f4;
     }
-    /* Drawer στα δεξιά */
+    /* Drawer στα δεξιά, κρυμμένο αφήνοντας 5px ορατά */
     #toolbar-drawer {
       position: fixed;
       top: 50px;
-      right: -320px;
+      right: -315px; /* 320px πλάτος - 5px = -315px */
       min-width: 320px;
       background: #fff;
       border: 2px solid #ccc;
@@ -53,11 +53,11 @@
       flex: 1;
       box-sizing: border-box;
     }
-    /* Toggle Button */
+    /* Toggle Button - παρακολουθεί το drawer */
     #drawer-toggle {
       position: fixed;
       top: 50px;
-      right: 0;
+      right: 5px;
       z-index: 1100;
       padding: 10px 14px;
       background: #3498db;
@@ -178,9 +178,16 @@
 <textarea id="editor"></textarea>
 
 <script>
-  // Toggle Drawer
+  // Toggle Drawer: το κουμπί παρακολουθεί το drawer στην κίνησή του
   function toggleDrawer() {
-    document.getElementById('toolbar-drawer').classList.toggle('open');
+    const drawer = document.getElementById('toolbar-drawer');
+    drawer.classList.toggle('open');
+    const toggleBtn = document.getElementById('drawer-toggle');
+    if (drawer.classList.contains('open')) {
+      toggleBtn.style.right = drawer.offsetWidth + 'px';
+    } else {
+      toggleBtn.style.right = '5px';
+    }
   }
   
   // TinyMCE Init
