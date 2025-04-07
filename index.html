@@ -12,15 +12,16 @@
     body {
       margin: 10px;
       font-family: "Segoe UI", sans-serif;
+	  font:12px
       background: #f4f4f4;
     }
     /* Drawer στα δεξιά, κρυμμένο αφήνοντας 5px ορατά */
     #toolbar-drawer {
        position: fixed; 
 	  height: 350px;
-      width: 320px;
+      width: 350px;
       top: 120px;
-      right: -315px; /* 320px πλάτος - 5px = -315px */  
+      right: -345px; /* 320px πλάτος - 5px = -315px */  
       background: #fff;
       border: 2px solid #ccc;
       border-radius: 8px 0 0 8px;
@@ -48,7 +49,7 @@
     }
     .row input, .row select, .row button {
       padding: 6px;
-      font-size: 10px;
+      font-size: 12px;
       border: 1px solid #ccc;
       border-radius: 4px;
       flex: 1;
@@ -185,7 +186,7 @@
     drawer.classList.toggle('open');
     const toggleBtn = document.getElementById('drawer-toggle');
     if (drawer.classList.contains('open')) {
-      toggleBtn.style.right = drawer.offsetWidth + 'px';
+      toggleBtn.style.right = drawer.offsetWidth-2 + 'px';
     } else {
       toggleBtn.style.right = '0px';
     }
