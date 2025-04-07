@@ -39,7 +39,7 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    button, label {
+    button, label, select {
       font-size: 15px;
       padding: 8px 14px;
       background-color: #3498db;
@@ -52,15 +52,19 @@
       gap: 6px;
     }
 
-    button:hover, label:hover {
+    button:hover, label:hover, select:hover {
       background-color: #2980b9;
+    }
+
+    select {
+      background-color: #3498db;
     }
 
     input[type="file"] {
       display: none;
     }
 
-    input[type="text"] {
+    input[type="text"], input[type="number"] {
       padding: 6px;
       border-radius: 6px;
       border: 1px solid #ccc;
@@ -96,6 +100,43 @@
   </label>
   <button onclick="insertIframe()">➕</button>
 
+  <label>
+    📄 Μέγεθος:
+    <select id="pageSizeSelector" onchange="changePageSettings()">
+      <option value="A4">A4</option>
+      <option value="Letter">Letter</option>
+      <option value="Custom">Προσαρμοσμένο</option>
+    </select>
+  </label>
+
+  <label>↕ Προσανατολισμός:
+    <select id="orientationSelector" onchange="changePageSettings()">
+      <option value="portrait">Κάθετος</option>
+      <option value="landscape">Οριζόντιος</option>
+    </select>
+  </label>
+
+  <label>📐 Περιθώρια:
+    <select id="marginSelector" onchange="changePageSettings()">
+      <option value="normal">Κανονικά</option>
+      <option value="narrow">Στενά</option>
+      <option value="wide">Ευρεία</option>
+      <option value="custom">Προσαρμοσμένα</option>
+    </select>
+  </label>
+
+  <label>⬆ <input type="number" id="marginTop" min="0" max="200" value="20" onchange="changePageSettings()" style="width:60px;"> px</label>
+  <label>⬇ <input type="number" id="marginBottom" min="0" max="200" value="20" onchange="changePageSettings()" style="width:60px;"> px</label>
+  <label>⬅ <input type="number" id="marginLeft" min="0" max="200" value="20" onchange="changePageSettings()" style="width:60px;"> px</label>
+  <label>➡ <input type="number" id="marginRight" min="0" max="200" value="20" onchange="changePageSettings()" style="width:60px;"> px</label>
+
+  <label>📏 Πλάτος:
+    <input type="number" id="customWidth" min="100" max="3000" value="800" onchange="changePageSettings()" style="width:70px;"> px
+  </label>
+  <label>📏 Ύψος:
+    <input type="number" id="customHeight" min="100" max="3000" value="1000" onchange="changePageSettings()" style="width:70px;"> px
+  </label>
+
   <span id="status"></span>
 </div>
 
@@ -115,7 +156,7 @@
     setup: function (editor) {
       function typesetMath() {
         try {
-          const iframeWin = editor.iframeElement.contentWindow;
+          const iframeWin = editor.iframeElement?.contentWindow;
           if (iframeWin && iframeWin.MathJax) {
             iframeWin.MathJax.typesetPromise();
           }
@@ -126,6 +167,9 @@
       editor.on('SetContent', typesetMath);
       editor.on('Change', typesetMath);
       editor.on('ExecCommand', typesetMath);
+      editor.on('init', () => {
+        changePageSettings();
+      });
     }
   });
 
@@ -166,19 +210,71 @@
     document.getElementById("status").textContent = "✔ Αποθηκεύτηκε";
     setTimeout(() => document.getElementById("status").textContent = "", 3000);
   }
+
   function previewImage() {
-  const url = document.getElementById("imagePath").value.trim();
-  const preview = document.getElementById("imagePreview");
+    const url = document.getElementById("imagePath").value.trim();
+    const preview = document.getElementById("imagePreview");
 
-  if (url) {
-    preview.src = url;
-    preview.style.display = "inline-block";
-  } else {
-    preview.src = "";
-    preview.style.display = "none";
+    if (url) {
+      preview.src = url;
+      preview.style.display = "inline-block";
+    } else {
+      preview.src = "";
+      preview.style.display = "none";
+    }
   }
-}
 
+  function changePageSettings() {
+    const size = document.getElementById('pageSizeSelector').value;
+    const orientation = document.getElementById('orientationSelector').value;
+    const margin = document.getElementById('marginSelector').value;
+    const editor = tinymce.get('editor');
+    const iframe = editor ? editor.iframeElement : null;
+    if (!iframe) return;
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const body = doc.body;
+
+    let width, height;
+
+    if (size === 'Custom') {
+      width = document.getElementById('customWidth').value + 'px';
+      height = document.getElementById('customHeight').value + 'px';
+    } else {
+      switch (size) {
+        case 'A4':
+          width = orientation === 'portrait' ? '210mm' : '297mm';
+          height = orientation === 'portrait' ? '297mm' : '210mm';
+          break;
+        case 'Letter':
+          width = orientation === 'portrait' ? '216mm' : '279mm';
+          height = orientation === 'portrait' ? '279mm' : '216mm';
+          break;
+      }
+    }
+
+    let padding;
+    if (margin === 'custom') {
+      const top = document.getElementById('marginTop').value + 'px';
+      const right = document.getElementById('marginRight').value + 'px';
+      const bottom = document.getElementById('marginBottom').value + 'px';
+      const left = document.getElementById('marginLeft').value + 'px';
+      padding = `${top} ${right} ${bottom} ${left}`;
+    } else {
+      switch (margin) {
+        case 'narrow': padding = '10px'; break;
+        case 'wide': padding = '50px'; break;
+        default: padding = '20px';
+      }
+    }
+
+    body.style.width = width;
+    body.style.minHeight = height;
+    body.style.margin = '0 auto';
+    body.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
+    body.style.background = '#fff';
+    body.style.padding = padding;
+  }
 </script>
 
 </body>
