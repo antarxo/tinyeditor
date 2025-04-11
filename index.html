@@ -1,39 +1,280 @@
+<!-- Αρχή αρχείου editorfull.html -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Test TinyMCE</title>
+  <title>HTML Editor - Οικονομία Ύψους</title>
   <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js" referrerpolicy="origin"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body { margin: 10px; font-family: "Segoe UI", sans-serif; background: #f4f4f4; }
+    #toolbar-drawer {
+      box-sizing: border-box;
+      position: fixed; top: 120px; right: -519px;
+      width: 500px;
+      background: #fff;
+      border: 2px solid #ccc; border-radius: 8px 0 0 8px;
+      box-shadow: -4px 4px 12px rgba(0,0,0,0.2);
+      padding: 10px; transition: right 0.3s ease; z-index: 1000;
+    }
+    #toolbar-drawer.open { right: 0; }
+    #drawer-toggle {
+      position: fixed; top: 125px; right: -5px;
+      z-index: 1100;
+      padding: 10px 14px;
+      background: #3498db; color: #fff;
+      border: none; border-radius: 8px 0 0 8px;
+      cursor: pointer;
+      transition: right 0.3s ease;
+    }
+    .control-group { margin-bottom: 10px; width: 100%; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .row label { font-size: 13px; font-weight: bold; white-space: nowrap; }
+    .row input, .row select, .row button {
+      padding: 6px; font-size: 12px; border: 1px solid #ccc;
+      border-radius: 4px; flex: 1; box-sizing: border-box;
+    }
+    textarea, #editor_ifr {
+      width: 100%;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    #imagePreview { max-height: 50px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; display: none; }
+  </style>
 </head>
 <body>
-  <textarea id="editor"></textarea>
 
-  <script>
-    tinymce.init({
-      selector: '#editor',
-      plugins: 'code lists',
-      toolbar: 'fontsize | bold italic',
-      fontsize_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt Custom', // Προσθήκη "Custom"
-      height: 500,
-      language: 'el',
-      setup: (editor) => {
-        // Επεξεργασία custom μεγέθους
-        editor.on('ExecCommand', (e) => {
-          if (e.command === 'FontSize' && e.value === 'Custom') {
-            const customSize = prompt("Εισαγάγετε μέγεθος (π.χ., 15pt, 22px, 1.5em):");
-            if (customSize) {
-              editor.formatter.apply('fontsize', { value: customSize });
-            }
-          }
-        });
-      },
-      content_style: `
-        body { 
-          font-family: Arial, sans-serif; 
-          font-size: 14px; 
-        }
-      `
-    });
-  </script>
+<button id="drawer-toggle" onclick="toggleDrawer()">|||</button>
+
+<div id="toolbar-drawer">
+  <!-- Φόρτωση / Αποθήκευση -->
+  <div class="control-group row">
+    <button onclick="saveFile()">💾 Αποθήκευση</button>
+    <label for="fileLoader" style="cursor:pointer;">📂Άνοιγμα</label>
+    <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
+  </div>
+
+  <!-- Ρυθμίσεις γραμματοσειράς -->
+  <div class="control-group row">
+    <label>Μέγεθος Γραμματοσειράς</label>
+    <input type="number" id="fontSizeValue" value="15" min="8" max="72" onchange="updateEditorFontSize()">
+    <select id="fontSizeUnit" onchange="updateEditorFontSize()">
+      <option value="px">px</option>
+      <option value="pt">pt</option>
+    </select>
+  </div>
+
+  <!-- Εικόνα -->
+  <div class="control-group row">
+    <label>🖼Εικόνα</label>
+    <input type="text" id="imagePath" placeholder="assets/img.jpg" oninput="previewImage()">
+    <button onclick="insertImagePath()">+Εισαγωγή</button>
+  </div>
+  <div class="control-group row">
+    <img id="imagePreview" src="" alt="preview">
+  </div>
+
+  <!-- iframe -->
+  <div class="control-group row">
+    <label>🔗iframe</label>
+    <input type="text" id="iframePath" placeholder="https://...">
+    <button onclick="insertIframe()">+Εισαγωγή</button>
+  </div>
+
+  <!-- Latex -->
+  <div class="control-group row">
+    <button onclick="insertLaTeX()">∑Latex</button>
+  </div>
+
+  <!-- Ρυθμίσεις Σελίδας -->
+  <div class="control-group row">
+    <label>Μέγεθος</label>
+    <select id="pageSizeSelector" onchange="changePageSettings()">
+      <option value="A4">A4</option>
+      <option value="Letter">Letter</option>
+      <option value="Custom">Custom</option>
+    </select>
+    <label>Προσανατολισμός</label>
+    <select id="orientationSelector" onchange="changePageSettings()">
+      <option value="portrait">Καθετος</option>
+      <option value="landscape">Οριζόντιος</option>
+    </select>
+  </div>
+  <div class="control-group row">
+    <label>Περιθώρια</label>
+    <select id="marginSelector" onchange="changePageSettings()">
+      <option value="normal">Κανονικά</option>
+      <option value="narrow">Στενά</option>
+      <option value="wide">Ευρέα</option>
+      <option value="custom">Custom</option>
+    </select>
+  </div>
+  <div class="control-group" id="custom-margins">
+    <div class="row">
+      <label>Άνω <input type="number" id="marginTop" value="20" onchange="changePageSettings()"></label>
+      <label>Κάτω <input type="number" id="marginBottom" value="20" onchange="changePageSettings()"></label>
+    </div>
+    <div class="row">
+      <label>Αριστερά <input type="number" id="marginLeft" value="20" onchange="changePageSettings()"></label>
+      <label>Δεξιά <input type="number" id="marginRight" value="20" onchange="changePageSettings()"></label>
+    </div>
+  </div>
+  <div class="control-group" id="custom-size-group">
+    <div class="row">
+      <label>Πλάτος <input type="number" id="customWidth" value="800" onchange="changePageSettings()"></label>
+      <label>Ύψος <input type="number" id="customHeight" value="400" onchange="changePageSettings()"></label>
+    </div>
+  </div>
+  <div class="control-group"><span id="status"></span></div>
+</div>
+
+<textarea id="editor"></textarea>
+
+<script>
+  function toggleDrawer() {
+    const drawer = document.getElementById('toolbar-drawer');
+    drawer.classList.toggle('open');
+    const toggleBtn = document.getElementById('drawer-toggle');
+    toggleBtn.style.right = drawer.classList.contains('open') ? drawer.offsetWidth - 2 + 'px' : '0px';
+  }
+
+  function updateEditorFontSize() {
+    const size = document.getElementById('fontSizeValue').value;
+    const unit = document.getElementById('fontSizeUnit').value;
+    const style = `body { font-family:Helvetica,Arial,sans-serif; font-size:${size}${unit} }`;
+    tinymce.get('editor').getDoc().body.style.fontSize = `${size}${unit}`;
+    localStorage.setItem('editorFontSize', `${size}${unit}`);
+  }
+
+  function restoreFontSize() {
+    const saved = localStorage.getItem('editorFontSize');
+    if (saved) {
+      const num = parseInt(saved);
+      const unit = saved.replace(num, '');
+      document.getElementById('fontSizeValue').value = num;
+      document.getElementById('fontSizeUnit').value = unit;
+    }
+  }
+
+  tinymce.init({
+    selector: '#editor',
+    plugins: 'code link lists fullscreen image table preview media',
+    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat preview code fullscreen',
+    height: 620,
+    language: 'el',
+    branding: false,
+    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }',
+    setup: function (editor) {
+      editor.on('init', () => {
+        changePageSettings();
+        restoreFontSize();
+        updateEditorFontSize();
+      });
+    }
+  });
+
+  function insertImagePath() {
+    const path = document.getElementById("imagePath").value.trim();
+    if (path) tinymce.get('editor').execCommand('mceInsertContent', false, `<img src="${path}" alt="img" />`);
+  }
+
+  function insertIframe() {
+    const path = document.getElementById("iframePath").value.trim();
+    if (path) tinymce.get('editor').execCommand('mceInsertContent', false, `<iframe src="${path}" width="600" height="400" frameborder="0" allowfullscreen></iframe>`);
+  }
+
+  function insertLaTeX() {
+    const latex = prompt("LaTeX:");
+    if (latex) tinymce.get('editor').execCommand('mceInsertContent', false, `\\[${latex}\\]`);
+  }
+
+  function loadFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      tinymce.get('editor').setContent(e.target.result);
+      const settings = JSON.parse(localStorage.getItem('pageSettings') || '{}');
+      if (settings.width) {
+        document.getElementById('customWidth').value = parseInt(settings.width);
+        document.getElementById('customHeight').value = parseInt(settings.height);
+        document.getElementById('pageSizeSelector').value = 'Custom';
+      }
+      changePageSettings();
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  function saveFile() {
+    const content = tinymce.get("editor").getContent();
+    const blob = new Blob([content], { type: "text/html;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "edited-file.html";
+    a.click();
+    document.getElementById("status").textContent = "✔";
+    setTimeout(() => document.getElementById("status").textContent = "", 3000);
+
+    // Save custom size
+    const width = document.getElementById('customWidth').value;
+    const height = document.getElementById('customHeight').value;
+    localStorage.setItem('pageSettings', JSON.stringify({ width, height }));
+  }
+
+  function previewImage() {
+    const url = document.getElementById("imagePath").value.trim();
+    const preview = document.getElementById("imagePreview");
+    preview.src = url;
+    preview.style.display = url ? "block" : "none";
+  }
+
+  function changePageSettings() {
+    const size = document.getElementById('pageSizeSelector').value;
+    const orient = document.getElementById('orientationSelector').value;
+    const margin = document.getElementById('marginSelector').value;
+    const editor = tinymce.get('editor');
+    const iframe = editor ? editor.iframeElement : null;
+    if (!iframe) return;
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const body = doc.body;
+
+    let width, height;
+    if (size === 'Custom') {
+      width = document.getElementById('customWidth').value + 'px';
+      height = document.getElementById('customHeight').value + 'px';
+    } else if (size === 'A4') {
+      width = orient === 'portrait' ? '210mm' : '297mm';
+      height = orient === 'portrait' ? '297mm' : '210mm';
+    } else if (size === 'Letter') {
+      width = orient === 'portrait' ? '216mm' : '279mm';
+      height = orient === 'portrait' ? '279mm' : '216mm';
+    }
+
+    let padding;
+    if (margin === 'custom') {
+      const t = document.getElementById('marginTop').value + 'px';
+      const r = document.getElementById('marginRight').value + 'px';
+      const b = document.getElementById('marginBottom').value + 'px';
+      const l = document.getElementById('marginLeft').value + 'px';
+      padding = `${t} ${r} ${b} ${l}`;
+    } else {
+      padding = margin === 'narrow' ? '10px' : margin === 'wide' ? '50px' : '20px';
+    }
+
+    body.style.width = width;
+    body.style.minHeight = height;
+    body.style.margin = '0 auto';
+    body.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
+    body.style.background = '#fff';
+    body.style.padding = padding;
+
+    document.getElementById('custom-margins').style.display = margin === 'custom' ? 'block' : 'none';
+    document.getElementById('custom-size-group').style.display = size === 'Custom' ? 'block' : 'none';
+  }
+</script>
+
 </body>
 </html>
+<!-- Τέλος αρχείου -->
