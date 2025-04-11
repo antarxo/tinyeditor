@@ -214,15 +214,15 @@
   // TinyMCE Init
   
 tinymce.init({
+  selector: '#editor',
   plugins: 'code link lists fullscreen image table preview media',
-  toolbar: 'undo redo | fontfamily fontsize | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat preview code fullscreen',
+  toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat preview code fullscreen',
   fontsize_formats: '6px 7px 8px 9px 10px 11px 12px 13px 14px 15px 16px 17px 18px 19px 20px 21px 22px 23px 26px 30px 36px',
-  toolbar_mode: 'wrap',
-  skin: 'oxide',
-  content_css: 'default',
   height: 620,
   language: 'el',
   branding: false,
+  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:11px }',
+  content_css: false,
   setup: function (editor) {
     function typesetMath() {
       try {
