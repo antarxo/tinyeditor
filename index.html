@@ -212,33 +212,33 @@
   }
   
   // TinyMCE Init
-  tinymce.init({
-    selector: '#editor',
-	   entity_encoding: 'raw',
-    plugins: 'code link lists fullscreen image table preview media',
-    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat preview code fullscreen',
-fontsize_formats: '6px 7px 8px 9px 10px 11px 12px 13px 14px 15px 16px 17px 18px 19px 20px 21px 22px 23px 26px 30px 36px', 
+  
+tinymce.init({
+  selector: '#editor',
+  plugins: 'code link lists fullscreen image table preview media',
+  toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat preview code fullscreen',
+  fontsize_formats: '6px 7px 8px 9px 10px 11px 12px 13px 14px 15px 16px 17px 18px 19px 20px 21px 22px 23px 26px 30px 36px',
   height: 620,
-    language: 'el',
-    branding: false,
-    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }',
-    content_css: false,
-    content_scripts: ['https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'],
-    setup: function (editor) {
-      function typesetMath() {
-        try {
-          const iframeWin = editor.iframeElement?.contentWindow;
-          if (iframeWin && iframeWin.MathJax) {
-            iframeWin.MathJax.typesetPromise();
-          }
-        } catch (e) {
-          console.error("MathJax error:", e);
+  language: 'el',
+  branding: false,
+  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }',
+  content_css: false,
+  setup: function (editor) {
+    function typesetMath() {
+      try {
+        const iframeWin = editor.iframeElement?.contentWindow;
+        if (iframeWin && iframeWin.MathJax) {
+          iframeWin.MathJax.typesetPromise();
         }
+      } catch (e) {
+        console.error("MathJax error:", e);
       }
-      editor.on('SetContent Change ExecCommand', typesetMath);
-      editor.on('init', () => { changePageSettings(); });
     }
-  });
+    editor.on('SetContent Change ExecCommand', typesetMath);
+    editor.on('init', () => { changePageSettings(); });
+  }
+});
+
   
   // Εικόνα
   function insertImagePath() {
