@@ -462,6 +462,11 @@
     document.getElementById('custom-margins').style.display = margin === 'custom' ? 'block' : 'none';
     document.getElementById('custom-size-group').style.display = size === 'Custom' ? 'block' : 'none';
   }
+  const selectionContent = editor.selection.getContent({ format: 'html' });
+console.log("Selection content:", selectionContent);
+if (selectionContent && typeof selectionContent === "string" && selectionContent.length > 0) {
+  // εφαρμογή αλλαγής
+}
 </script>
 
 </body>
