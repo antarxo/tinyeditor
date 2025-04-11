@@ -261,6 +261,11 @@
   function restoreFontSize() {
     const saved = localStorage.getItem('editorFontSize');
     if (saved) {
+      // Έλεγχος ότι το string φαίνεται έγκυρο ως JSON (πρέπει να ξεκινά με '{')
+      if (saved.trim().charAt(0) !== '{') {
+        localStorage.removeItem('editorFontSize');
+        return;
+      }
       try {
         const data = JSON.parse(saved);
         if (data && data.px && data.display && data.unit) {
@@ -275,6 +280,7 @@
         }
       } catch (e) {
         console.error("Error parsing saved font size:", e);
+        localStorage.removeItem('editorFontSize');
       }
     }
   }
