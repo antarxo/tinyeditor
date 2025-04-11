@@ -28,7 +28,7 @@
       z-index: 1000;
     }
     #toolbar-drawer.open { right: 0; }
-    /* Toggle Button - παρακολουθεί το drawer */
+    /* Toggle Button */
     #drawer-toggle {
       position: fixed;
       top: 125px;
@@ -42,7 +42,7 @@
       cursor: pointer;
       transition: right 0.3s ease;
     }
-    /* Γενικές ρυθμίσεις για τα controls */
+    /* Ρυθμίσεις για τα controls */
     .control-group { margin-bottom: 10px; width: 100%; }
     .row {
       display: flex;
@@ -51,7 +51,7 @@
       align-items: center;
     }
     .row label {
-      font-size: 13px;    
+      font-size: 13px;
       font-weight: bold;
       white-space: nowrap;
     }
@@ -85,7 +85,7 @@
 <!-- Toggle Drawer -->
 <button id="drawer-toggle" onclick="toggleDrawer()">|||</button>
 
-<!-- Drawer με ρυθμίσεις -->
+<!-- Drawer -->
 <div id="toolbar-drawer">
   <!-- Αποθήκευση/Άνοιγμα -->
   <div class="control-group row">
@@ -174,8 +174,9 @@
 <textarea id="editor"></textarea>
 
 <script>
-  // Flag για να καταγράφουμε εάν έχει φορτωθεί αρχείο
+  // Global flag για το αν έχει φορτωθεί αρχείο και global default font size για τις νέες εισαγωγές
   let fileLoaded = false;
+  let defaultFontSize = '15px'; // προεπιλεγμένη τιμή
 
   function toggleDrawer() {
     const drawer = document.getElementById('toolbar-drawer');
@@ -184,10 +185,7 @@
     toggleBtn.style.right = drawer.classList.contains('open') ? drawer.offsetWidth - 2 + 'px' : '0px';
   }
 
-  // Τροποποιημένη λειτουργία αλλαγής μεγέθους γραμματοσειράς:
-  // - Εάν υπάρχει επιλεγμένο κείμενο, εφαρμόζεται αλλαγή μόνο σε αυτό.
-  // - Εάν ο editor είναι κενός και δεν έχει φορτωθεί αρχείο, ενημερώνεται το default στυλ.
-  // - Εάν έχει φορτωθεί αρχείο και δεν υπάρχει επιλογή, τότε δε γίνεται καμία αλλαγή (διατηρούνται τα στυλ του αρχείου).
+  // Ενημέρωση αλλαγής μεγέθους γραμματοσειράς
   function updateEditorFontSize() {
     const editor = tinymce.get('editor');
     const size = document.getElementById('fontSizeValue').value;
@@ -199,10 +197,10 @@
       // Εφαρμογή αλλαγής μόνο στο επιλεγμένο κείμενο
       editor.formatter.apply('custom_font_size', { value: newSize });
     } else {
-      // Ενημέρωση default στυλ μόνο εάν ο editor είναι κενός και δεν έχει φορτωθεί αρχείο
-      if (editor.getContent({ format: 'html' }).trim() === "" && !fileLoaded) {
-        editor.getDoc().body.style.fontSize = newSize;
-      }
+      // Ενημέρωση του global default για νέες εισαγωγές (ακόμα και αν υπάρχει φορτωμένο αρχείο)
+      defaultFontSize = newSize;
+      // Ενημέρωση του body ώστε νέα κείμενα να το κληρονομήσουν, χωρίς να αλλοιωθεί το υπάρχον περιεχόμενο
+      editor.getDoc().body.style.fontSize = newSize;
     }
     localStorage.setItem('editorFontSize', newSize);
   }
@@ -214,10 +212,11 @@
       const unit = saved.replace(num, '');
       document.getElementById('fontSizeValue').value = num;
       document.getElementById('fontSizeUnit').value = unit;
+      defaultFontSize = saved;
     }
   }
 
-  // TinyMCE Init με ορισμό custom format για font size
+  // TinyMCE Init με custom format για font size
   tinymce.init({
     selector: '#editor',
     plugins: 'code link lists fullscreen image table preview media',
@@ -233,9 +232,21 @@
       editor.on('init', () => {
         changePageSettings();
         restoreFontSize();
-        // Εάν ο editor είναι κενός και δεν έχει φορτωθεί αρχείο, τότε εφαρμόζεται το default.
+        // Εφαρμογή default αν δεν υπάρχει περιεχόμενο
         if (editor.getContent({ format: 'html' }).trim() === "") {
-          updateEditorFontSize();
+          editor.getDoc().body.style.fontSize = defaultFontSize;
+        }
+      });
+      // Listener για το Enter, ώστε οι νέες παράγραφοι να λάβουν το default font size αν δεν έχουν ήδη καθορισμένο inline style
+      editor.on('keydown', function(e) {
+        if(e.keyCode === 13) { // Enter
+          setTimeout(() => {
+            let node = editor.selection.getNode();
+            // Εάν πρόκειται για παράγραφο (P) χωρίς καθορισμένη τιμή, θέτουμε το default font size
+            if(node && node.nodeName === 'P' && !node.style.fontSize) {
+              node.style.fontSize = defaultFontSize;
+            }
+          }, 0);
         }
       });
     }
@@ -268,16 +279,17 @@
     const reader = new FileReader();
     reader.onload = function(e) {
       tinymce.get('editor').setContent(e.target.result);
-      // Καταχώρηση ότι έχει φορτωθεί αρχείο
+      // Θέτουμε το flag ότι έχει φορτωθεί αρχείο
       fileLoaded = true;
-      // Φόρτωση αποθηκευμένων ρυθμίσεων για custom μέγεθος, εάν υπάρχουν
+      // Φόρτωση αποθηκευμένων ρυθμίσεων για το custom μέγεθος σελίδας
       const settings = JSON.parse(localStorage.getItem('pageSettings') || '{}');
       if (settings.width) {
         document.getElementById('customWidth').value = parseInt(settings.width);
         document.getElementById('customHeight').value = parseInt(settings.height);
         document.getElementById('pageSizeSelector').value = 'Custom';
       }
-      changePageSettings();
+      // Καθυστερούμε την εφαρμογή των page settings λίγο για να είναι σίγουρο ότι το περιεχόμενο έχει αποδοθεί
+      setTimeout(changePageSettings, 100);
     };
     reader.readAsText(file, 'UTF-8');
   }
