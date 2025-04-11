@@ -183,9 +183,33 @@
     drawer.classList.toggle('open');
     const toggleBtn = document.getElementById('drawer-toggle');
     toggleBtn.style.right = drawer.classList.contains('open') ? (drawer.offsetWidth - 2) + 'px' : '0px';
+    
+    // Κατά το άνοιγμα του drawer, συγχρονίζουμε το control του font size
+    if (drawer.classList.contains('open')) {
+      syncFontSizeControl();
+    }
   }
 
-  // Ενημέρωση αλλαγής μεγέθους γραμματοσειράς από το συρτάρι
+  // Συνάρτηση συγχρονισμού του font size στο drawer
+  function syncFontSizeControl() {
+    const editor = tinymce.get('editor');
+    if (!editor) return;
+    let node = editor.selection.getNode();
+    // Εάν δεν έχει επιλεγεί στοιχείο ή επιλέγεται το body, παίρνουμε το body του editor
+    if (!node || node.nodeName === 'BODY') {
+      node = editor.getDoc().body;
+    }
+    const computedStyle = window.getComputedStyle(node);
+    let computedFontSize = computedStyle.getPropertyValue('font-size');
+    if (computedFontSize) {
+      const num = parseInt(computedFontSize);
+      let unit = computedFontSize.replace(num, '').trim() || 'px';
+      document.getElementById('fontSizeValue').value = num;
+      document.getElementById('fontSizeUnit').value = unit;
+    }
+  }
+
+  // Ενημέρωση αλλαγής μεγέθους γραμματοσειράς από το drawer
   function updateEditorFontSize() {
     const editor = tinymce.get('editor');
     const size = document.getElementById('fontSizeValue').value;
@@ -209,14 +233,14 @@
     const saved = localStorage.getItem('editorFontSize');
     if (saved) {
       const num = parseInt(saved);
-      const unit = saved.replace(num, '');
+      let unit = saved.replace(num, '').trim() || 'px';
       document.getElementById('fontSizeValue').value = num;
-      document.getElementById('fontSizeUnit').value = unit.trim() || 'px';
+      document.getElementById('fontSizeUnit').value = unit;
       defaultFontSize = saved;
     }
   }
 
-  // TinyMCE Init με custom format για το font size και event listener για συγχρονισμό
+  // TinyMCE Init με custom format για το font size και listener για συγχρονισμό
   tinymce.init({
     selector: '#editor',
     plugins: 'code link lists fullscreen image table preview media',
@@ -250,21 +274,9 @@
         }
       });
       
-      // Διπλής κατεύθυνσης συγχρονισμός: όταν αλλάζει το selection, ενημερώνουμε τα controls στο drawer
-      editor.on('NodeChange', function(e) {
-        const node = editor.selection.getNode();
-        // Απόπειρα ανάκτησης του υπολογισμένου font size από το στοιχείο
-        if (node) {
-          const computedStyle = window.getComputedStyle(node, null);
-          let computedFontSize = computedStyle.getPropertyValue('font-size');
-          if (computedFontSize) {
-            // Παίρνουμε το αριθμητικό μέρος και τη μονάδα (π.χ. "15px")
-            let num = parseInt(computedFontSize);
-            let unit = computedFontSize.replace(num, '').trim() || 'px';
-            document.getElementById('fontSizeValue').value = num;
-            document.getElementById('fontSizeUnit').value = unit;
-          }
-        }
+      // Διπλής κατεύθυνσης συγχρονισμός: όταν αλλάζει το selection, ενημέρωση του drawer
+      editor.on('NodeChange', function() {
+        syncFontSizeControl();
       });
     }
   });
