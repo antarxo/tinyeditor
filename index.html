@@ -174,9 +174,9 @@
 <textarea id="editor"></textarea>
 
 <script>
-  // Global flag για το αν έχει φορτωθεί αρχείο και global default font size για νέες εισαγωγές
+  // Global flag και global default font size
   let fileLoaded = false;
-  let defaultFontSize = '15px'; // προεπιλεγμένη τιμή
+  let defaultFontSize = '15px';
 
   function toggleDrawer() {
     const drawer = document.getElementById('toolbar-drawer');
@@ -184,7 +184,6 @@
     const toggleBtn = document.getElementById('drawer-toggle');
     toggleBtn.style.right = drawer.classList.contains('open') ? (drawer.offsetWidth - 2) + 'px' : '0px';
     
-    // Κατά το άνοιγμα του drawer, συγχρονίζουμε το control του font size
     if (drawer.classList.contains('open')) {
       syncFontSizeControl();
     }
@@ -195,52 +194,71 @@
     const editor = tinymce.get('editor');
     if (!editor) return;
     let node = editor.selection.getNode();
-    // Εάν δεν έχει επιλεγεί στοιχείο ή επιλέγεται το body, παίρνουμε το body του editor
     if (!node || node.nodeName === 'BODY') {
       node = editor.getDoc().body;
     }
     const computedStyle = window.getComputedStyle(node);
-    let computedFontSize = computedStyle.getPropertyValue('font-size');
+    let computedFontSize = computedStyle.getPropertyValue('font-size'); // π.χ. "16px"
     if (computedFontSize) {
-      const num = parseInt(computedFontSize);
-      let unit = computedFontSize.replace(num, '').trim() || 'px';
-      document.getElementById('fontSizeValue').value = num;
-      document.getElementById('fontSizeUnit').value = unit;
+      const numPx = parseFloat(computedFontSize);
+      let unitFromDrawer = document.getElementById('fontSizeUnit').value;      
+      // Αν ο χρήστης έχει επιλέξει pt στο drawer, μετατρέπουμε το px σε pt (1pt ≈ 1.333px)
+      let displayValue;
+      if (unitFromDrawer === 'pt') {
+        displayValue = Math.round(numPx / 1.33333);
+      } else {
+        displayValue = Math.round(numPx);
+      }
+      document.getElementById('fontSizeValue').value = displayValue;
     }
   }
 
-  // Ενημέρωση αλλαγής μεγέθους γραμματοσειράς από το drawer
+  // Ενημέρωση του editor όταν αλλάζει κάτι στο drawer για το font size
   function updateEditorFontSize() {
     const editor = tinymce.get('editor');
-    const size = document.getElementById('fontSizeValue').value;
+    const sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
     const unit = document.getElementById('fontSizeUnit').value;
-    const newSize = size + unit;
+    let newSize;
+    
+    // Αν το drawer λέει pt, μετατρέπουμε σε px για το editor (1pt ≈ 1.333px)
+    if (unit === 'pt') {
+      newSize = (sizeInput * 1.33333).toFixed(0) + 'px';
+    } else {
+      newSize = sizeInput + 'px';
+    }
     const selectionContent = editor.selection.getContent({ format: 'html' });
     
     if (selectionContent) {
-      // Εφαρμογή αλλαγής μόνο στο επιλεγμένο κείμενο με custom format
       editor.formatter.apply('custom_font_size', { value: newSize });
     } else {
-      // Ενημέρωση του global default για νέες εισαγωγές
       defaultFontSize = newSize;
       editor.getDoc().body.style.fontSize = newSize;
     }
     localStorage.setItem('editorFontSize', newSize);
   }
 
-  // Ανάκτηση αποθηκευμένου font size και ενημέρωση των controls
+  // Ανάκτηση και εφαρμογή αποθηκευμένου font size
   function restoreFontSize() {
     const saved = localStorage.getItem('editorFontSize');
     if (saved) {
-      const num = parseInt(saved);
-      let unit = saved.replace(num, '').trim() || 'px';
-      document.getElementById('fontSizeValue').value = num;
-      document.getElementById('fontSizeUnit').value = unit;
+      const numPx = parseFloat(saved);
+      // Ενημέρωση των controls: εδώ υποθέτουμε ότι το default unit είναι px
+      document.getElementById('fontSizeValue').value = Math.round(numPx);
+      document.getElementById('fontSizeUnit').value = 'px';
       defaultFontSize = saved;
     }
   }
 
-  // TinyMCE Init με custom format για το font size και listener για συγχρονισμό
+  // Προσθέτουμε listener στο document για click εκτός του drawer/Editor για συγχρονισμό
+  document.addEventListener('click', function(e) {
+    const drawer = document.getElementById('toolbar-drawer');
+    const editorElem = document.getElementById('editor_ifr');
+    if (!drawer.contains(e.target) && !(editorElem && editorElem.contains(e.target))) {
+      syncFontSizeControl();
+    }
+  });
+
+  // TinyMCE Init με custom format και listener για συγχρονισμό
   tinymce.init({
     selector: '#editor',
     plugins: 'code link lists fullscreen image table preview media',
@@ -256,15 +274,13 @@
       editor.on('init', () => {
         restoreFontSize();
         changePageSettings();
-        // Εφαρμογή default αν δεν υπάρχει περιεχόμενο
         if (editor.getContent({ format: 'html' }).trim() === "") {
           editor.getDoc().body.style.fontSize = defaultFontSize;
         }
       });
       
-      // Listener για το Enter ώστε νέες παράγραφοι να λάβουν το default font size
       editor.on('keydown', function(e) {
-        if (e.keyCode === 13) { // Enter
+        if (e.keyCode === 13) {
           setTimeout(() => {
             let node = editor.selection.getNode();
             if (node && node.nodeName === 'P' && !node.style.fontSize) {
@@ -274,7 +290,7 @@
         }
       });
       
-      // Διπλής κατεύθυνσης συγχρονισμός: όταν αλλάζει το selection, ενημέρωση του drawer
+      // Ενημέρωση του drawer όταν αλλάζει το selection
       editor.on('NodeChange', function() {
         syncFontSizeControl();
       });
@@ -309,7 +325,6 @@
     reader.onload = function(e) {
       tinymce.get('editor').setContent(e.target.result);
       fileLoaded = true;
-      // Φόρτωση αποθηκευμένων ρυθμίσεων για το custom μέγεθος σελίδας
       const settings = JSON.parse(localStorage.getItem('pageSettings') || '{}');
       if (settings.width) {
         document.getElementById('customWidth').value = parseInt(settings.width);
@@ -331,7 +346,6 @@
     document.getElementById("status").textContent = "✔";
     setTimeout(() => { document.getElementById("status").textContent = ""; }, 3000);
     
-    // Αποθήκευση custom μεγέθους σελίδας
     const width = document.getElementById('customWidth').value;
     const height = document.getElementById('customHeight').value;
     localStorage.setItem('pageSettings', JSON.stringify({ width, height }));
