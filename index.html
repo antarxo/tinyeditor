@@ -191,7 +191,7 @@
   }
 
   // Συνάρτηση συγχρονισμού του font size στο drawer
-  // Ελέγχει αν η μονάδα του drawer είναι pt ή px και μετατρέπει αναλόγως
+  // Ελέγχει αν η μονάδα είναι pt ή px και μετατρέπει αναλόγως
   function syncFontSizeControl() {
     const editor = tinymce.get('editor');
     if (!editor) return;
@@ -205,7 +205,7 @@
       // Διαβάζουμε πάντα από το computed style σε px
       const numPx = parseFloat(computedFontSize);
       let unitFromDrawer = document.getElementById('fontSizeUnit').value;
-      // Εάν έχει επιλεγεί pt, μετατρέπουμε από px σε pt (1pt ≈ 1.33333px)
+      // Μετατροπή από px σε pt αν η μονάδα είναι pt (1pt ≈ 1.33333px)
       let displayValue;
       if (unitFromDrawer === 'pt') {
         displayValue = Math.round(numPx / 1.33333);
@@ -219,11 +219,16 @@
   // Ενημέρωση του editor όταν αλλάζει το font size από το drawer
   function updateEditorFontSize() {
     const editor = tinymce.get('editor');
-    const sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
+    if (!editor) return;  // Έλεγχος αν ο editor υπάρχει
+
+    let sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
+    if (isNaN(sizeInput)) {
+      sizeInput = 15; // Εάν η τιμή δεν είναι έγκυρη, χρησιμοποιούμε default
+    }
     const unit = document.getElementById('fontSizeUnit').value;
     let newSize;
     
-    // Μετατροπή: αν επιλέγεται pt, μετατρέπουμε σε px για το editor (1pt ≈ 1.33333px)
+    // Εάν επιλέγεται pt, μετατρέπουμε σε px για τον editor (1pt ≈ 1.33333px)
     if (unit === 'pt') {
       newSize = (sizeInput * 1.33333).toFixed(0) + 'px';
     } else {
@@ -240,21 +245,37 @@
       defaultFontSize = newSize;
       editor.getDoc().body.style.fontSize = newSize;
     }
-    localStorage.setItem('editorFontSize', newSize);
+    
+    // Αποθήκευση των ρυθμίσεων (τόσο της τιμής όσο και της μονάδας) στο localStorage
+    localStorage.setItem('editorFontSize', JSON.stringify({
+      px: newSize,       // το πραγματικό μέγεθος που έχει εφαρμοστεί στον editor (σε px)
+      display: sizeInput, // η τιμή όπως την βλέπει ο χρήστης στο drawer
+      unit: unit         // η μονάδα (px ή pt)
+    }));
     
     // Κλήση NodeChange για να ενημερωθεί και το UI του toolbar
     editor.fire('NodeChange');
   }
 
-  // Ανάκτηση και εφαρμογή αποθηκευμένου font size
+  // Ανάκτηση και εφαρμογή αποθηκευμένου font size και μονάδας
   function restoreFontSize() {
     const saved = localStorage.getItem('editorFontSize');
     if (saved) {
-      const numPx = parseFloat(saved);
-      // Ενημέρωση των controls: υποθέτουμε ότι το default unit είναι px
-      document.getElementById('fontSizeValue').value = Math.round(numPx);
-      document.getElementById('fontSizeUnit').value = 'px';
-      defaultFontSize = saved;
+      try {
+        const data = JSON.parse(saved);
+        if (data && data.px && data.display && data.unit) {
+          defaultFontSize = data.px;
+          document.getElementById('fontSizeValue').value = data.display;
+          document.getElementById('fontSizeUnit').value = data.unit;
+          // Εφαρμογή στο body του editor
+          const editor = tinymce.get('editor');
+          if (editor) {
+            editor.getDoc().body.style.fontSize = data.px;
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing saved font size:", e);
+      }
     }
   }
 
