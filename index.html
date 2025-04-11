@@ -3,23 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <title>Test TinyMCE</title>
-  <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+  <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
   <textarea id="editor"></textarea>
-  
+
   <script>
     tinymce.init({
       selector: '#editor',
-      plugins: 'advlist code link lists', // 🚨 ΑΠΑΡΑΙΤΗΤΟ το plugin `advlist`
-      toolbar: 'fontfamily fontsize | bold italic underline',
-      fontsize_formats: '6pt 8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt 48pt', // Επιβεβαιωμένες τιμές
-      height: 620,
+      plugins: 'code lists',
+      toolbar: 'fontsize | bold italic',
+      fontsize_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt Custom', // Προσθήκη "Custom"
+      height: 500,
       language: 'el',
+      setup: (editor) => {
+        // Επεξεργασία custom μεγέθους
+        editor.on('ExecCommand', (e) => {
+          if (e.command === 'FontSize' && e.value === 'Custom') {
+            const customSize = prompt("Εισαγάγετε μέγεθος (π.χ., 15pt, 22px, 1.5em):");
+            if (customSize) {
+              editor.formatter.apply('fontsize', { value: customSize });
+            }
+          }
+        });
+      },
       content_style: `
         body { 
           font-family: Arial, sans-serif; 
-          font-size: 6px; 
+          font-size: 14px; 
         }
       `
     });
