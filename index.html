@@ -7,15 +7,21 @@
 </head>
 <body>
   <textarea id="editor"></textarea>
+  
   <script>
     tinymce.init({
       selector: '#editor',
-      plugins: 'code link lists fullscreen image table preview media fontsize',
-      toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat preview code fullscreen',
-      fontsize_formats: '6pt 7pt 8pt 9pt 10pt 11pt 12pt 13pt 14pt 15pt 16pt 17pt 18pt 19pt 20pt 21pt 22pt 23pt 26pt 30pt 36pt',
+      plugins: 'advlist code link lists', // 🚨 ΑΠΑΡΑΙΤΗΤΟ το plugin `advlist`
+      toolbar: 'fontfamily fontsize | bold italic underline',
+      fontsize_formats: '6pt 8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt 48pt', // Επιβεβαιωμένες τιμές
       height: 620,
       language: 'el',
-      content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }'
+      content_style: `
+        body { 
+          font-family: Arial, sans-serif; 
+          font-size: 14px; 
+        }
+      `
     });
   </script>
 </body>
