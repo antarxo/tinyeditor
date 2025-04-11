@@ -181,21 +181,25 @@
     toggleBtn.style.right = drawer.classList.contains('open') ? drawer.offsetWidth - 2 + 'px' : '0px';
   }
 
-  // Ενημέρωση μεγέθους γραμματοσειράς
+  // Τροποποιημένη λειτουργία αλλαγής μεγέθους γραμματοσειράς:
+  // - Αν υπάρχει επιλεγμένο κείμενο, εφαρμόζεται μόνο σε αυτό.
+  // - Αν ο editor είναι κενός, ενημερώνεται το default στυλ.
+  // - Αν έχει φορτωθεί αρχείο (δηλαδή υπάρχει περιεχόμενο), και δεν υπάρχει επιλογή, δεν τροποποιείται το στυλ.
   function updateEditorFontSize() {
     const editor = tinymce.get('editor');
     const size = document.getElementById('fontSizeValue').value;
     const unit = document.getElementById('fontSizeUnit').value;
     const newSize = size + unit;
-
-    // Έλεγχος για επιλεγμένο κείμενο
     const selectionContent = editor.selection.getContent({ format: 'html' });
+    
     if (selectionContent) {
-      // Εφαρμογή σε επιλεγμένο κείμενο μέσω custom format
+      // Εφαρμογή αλλαγής μόνο στο επιλεγμένο κείμενο
       editor.formatter.apply('custom_font_size', { value: newSize });
     } else {
-      // Ενημέρωση default στυλ του body του editor για επερχόμενο κείμενο
-      editor.getDoc().body.style.fontSize = newSize;
+      // Εφαρμογή default στυλ μόνο εάν ο editor είναι κενός
+      if (editor.getContent({ format: 'html' }).trim() === "") {
+        editor.getDoc().body.style.fontSize = newSize;
+      }
     }
     localStorage.setItem('editorFontSize', newSize);
   }
@@ -226,6 +230,8 @@
       editor.on('init', () => {
         changePageSettings();
         restoreFontSize();
+        // Επειδή κατά το init ο editor είναι κενός, εφαρμόζεται το default.
+        // Αν από το χρήστη φορτωθεί αρχείο, αυτό θα αντικατασταθεί με το περιεχόμενο του αρχείου.
         updateEditorFontSize();
       });
     }
@@ -279,7 +285,7 @@
     a.click();
     document.getElementById("status").textContent = "✔";
     setTimeout(() => document.getElementById("status").textContent = "", 3000);
-
+    
     // Αποθήκευση custom μεγέθους σελίδας
     const width = document.getElementById('customWidth').value;
     const height = document.getElementById('customHeight').value;
