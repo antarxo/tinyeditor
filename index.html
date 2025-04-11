@@ -15,7 +15,7 @@
     /* Drawer στα δεξιά, κρυμμένο αφήνοντας 5px ορατά */
     #toolbar-drawer {
       box-sizing: border-box;
-      position: fixed; 
+      position: fixed;
       top: 120px;
       right: -519px; /* 500px πλάτος + 19px */
       width: 500px;
@@ -42,7 +42,7 @@
       cursor: pointer;
       transition: right 0.3s ease;
     }
-    /* Ρυθμίσεις για τα controls */
+    /* Στυλ για τα controls */
     .control-group { margin-bottom: 10px; width: 100%; }
     .row {
       display: flex;
@@ -63,14 +63,14 @@
       flex: 1;
       box-sizing: border-box;
     }
-    /* Editor */
+    /* Στυλ για το Editor */
     textarea, #editor_ifr {
       width: 100%;
       border: 2px solid #ccc;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    /* Image preview */
+    /* Στυλ για το Image preview */
     #imagePreview {
       max-height: 50px;
       margin-top: 5px;
@@ -174,10 +174,11 @@
 <textarea id="editor"></textarea>
 
 <script>
-  // Global flag και global default font size
+  // Global flag για φόρτωση αρχείου και global default font size για νέες εισαγωγές
   let fileLoaded = false;
   let defaultFontSize = '15px';
 
+  // Toggle Drawer: Όταν ανοίγει, συγχρονίζει το control του font size στο drawer
   function toggleDrawer() {
     const drawer = document.getElementById('toolbar-drawer');
     drawer.classList.toggle('open');
@@ -190,6 +191,7 @@
   }
 
   // Συνάρτηση συγχρονισμού του font size στο drawer
+  // Ελέγχει αν η μονάδα του drawer είναι pt ή px και μετατρέπει αναλόγως
   function syncFontSizeControl() {
     const editor = tinymce.get('editor');
     if (!editor) return;
@@ -200,9 +202,10 @@
     const computedStyle = window.getComputedStyle(node);
     let computedFontSize = computedStyle.getPropertyValue('font-size'); // π.χ. "16px"
     if (computedFontSize) {
+      // Διαβάζουμε πάντα από το computed style σε px
       const numPx = parseFloat(computedFontSize);
-      let unitFromDrawer = document.getElementById('fontSizeUnit').value;      
-      // Αν ο χρήστης έχει επιλέξει pt στο drawer, μετατρέπουμε το px σε pt (1pt ≈ 1.333px)
+      let unitFromDrawer = document.getElementById('fontSizeUnit').value;
+      // Εάν έχει επιλεγεί pt, μετατρέπουμε από px σε pt (1pt ≈ 1.33333px)
       let displayValue;
       if (unitFromDrawer === 'pt') {
         displayValue = Math.round(numPx / 1.33333);
@@ -213,28 +216,34 @@
     }
   }
 
-  // Ενημέρωση του editor όταν αλλάζει κάτι στο drawer για το font size
+  // Ενημέρωση του editor όταν αλλάζει το font size από το drawer
   function updateEditorFontSize() {
     const editor = tinymce.get('editor');
     const sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
     const unit = document.getElementById('fontSizeUnit').value;
     let newSize;
     
-    // Αν το drawer λέει pt, μετατρέπουμε σε px για το editor (1pt ≈ 1.333px)
+    // Μετατροπή: αν επιλέγεται pt, μετατρέπουμε σε px για το editor (1pt ≈ 1.33333px)
     if (unit === 'pt') {
       newSize = (sizeInput * 1.33333).toFixed(0) + 'px';
     } else {
       newSize = sizeInput + 'px';
     }
+    
     const selectionContent = editor.selection.getContent({ format: 'html' });
     
     if (selectionContent) {
+      // Εφαρμογή αλλαγής μόνο στο επιλεγμένο κείμενο μέσω custom format
       editor.formatter.apply('custom_font_size', { value: newSize });
     } else {
+      // Ενημέρωση του global default για νέες εισαγωγές
       defaultFontSize = newSize;
       editor.getDoc().body.style.fontSize = newSize;
     }
     localStorage.setItem('editorFontSize', newSize);
+    
+    // Κλήση NodeChange για να ενημερωθεί και το UI του toolbar
+    editor.fire('NodeChange');
   }
 
   // Ανάκτηση και εφαρμογή αποθηκευμένου font size
@@ -242,14 +251,14 @@
     const saved = localStorage.getItem('editorFontSize');
     if (saved) {
       const numPx = parseFloat(saved);
-      // Ενημέρωση των controls: εδώ υποθέτουμε ότι το default unit είναι px
+      // Ενημέρωση των controls: υποθέτουμε ότι το default unit είναι px
       document.getElementById('fontSizeValue').value = Math.round(numPx);
       document.getElementById('fontSizeUnit').value = 'px';
       defaultFontSize = saved;
     }
   }
 
-  // Προσθέτουμε listener στο document για click εκτός του drawer/Editor για συγχρονισμό
+  // Listener για κλικ εκτός του drawer/Editor ώστε να συγχρονίζεται το control
   document.addEventListener('click', function(e) {
     const drawer = document.getElementById('toolbar-drawer');
     const editorElem = document.getElementById('editor_ifr');
@@ -258,7 +267,7 @@
     }
   });
 
-  // TinyMCE Init με custom format και listener για συγχρονισμό
+  // TinyMCE Init με custom format για το font size και listeners για συγχρονισμό
   tinymce.init({
     selector: '#editor',
     plugins: 'code link lists fullscreen image table preview media',
@@ -279,8 +288,9 @@
         }
       });
       
+      // Listener για το Enter ώστε νέες παράγραφοι να λαμβάνουν το default font size
       editor.on('keydown', function(e) {
-        if (e.keyCode === 13) {
+        if (e.keyCode === 13) { // Enter
           setTimeout(() => {
             let node = editor.selection.getNode();
             if (node && node.nodeName === 'P' && !node.style.fontSize) {
@@ -290,13 +300,14 @@
         }
       });
       
-      // Ενημέρωση του drawer όταν αλλάζει το selection
+      // Όποτε αλλάζει το selection, συγχρονίζεται το drawer
       editor.on('NodeChange', function() {
         syncFontSizeControl();
       });
     }
   });
 
+  // Εισαγωγή εικόνας
   function insertImagePath() {
     const path = document.getElementById("imagePath").value.trim();
     if (path) {
@@ -304,6 +315,7 @@
     }
   }
 
+  // Εισαγωγή iframe
   function insertIframe() {
     const path = document.getElementById("iframePath").value.trim();
     if (path) {
@@ -311,6 +323,7 @@
     }
   }
 
+  // Εισαγωγή LaTeX
   function insertLaTeX() {
     const latex = prompt("LaTeX:");
     if (latex) {
@@ -318,6 +331,7 @@
     }
   }
 
+  // Φόρτωση αρχείου
   function loadFile(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -336,6 +350,7 @@
     reader.readAsText(file, 'UTF-8');
   }
 
+  // Αποθήκευση αρχείου
   function saveFile() {
     const content = tinymce.get("editor").getContent();
     const blob = new Blob([content], { type: "text/html;charset=utf-8" });
@@ -351,6 +366,7 @@
     localStorage.setItem('pageSettings', JSON.stringify({ width, height }));
   }
 
+  // Προεπισκόπηση εικόνας
   function previewImage() {
     const url = document.getElementById("imagePath").value.trim();
     const preview = document.getElementById("imagePreview");
@@ -363,6 +379,7 @@
     }
   }
 
+  // Εφαρμογή ρυθμίσεων σελίδας
   function changePageSettings() {
     const size = document.getElementById('pageSizeSelector').value;
     const orient = document.getElementById('orientationSelector').value;
