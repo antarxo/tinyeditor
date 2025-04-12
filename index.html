@@ -209,54 +209,56 @@
   }
 
   // Ενημέρωση του editor όταν αλλάζει το font size από το drawer
-  function updateEditorFontSize() {
-    const editor = tinymce.get('editor');
-    if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') {
-      console.warn("Editor is not ready for updateEditorFontSize.");
-      return;
-    }
-    
-    let sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
-    if (isNaN(sizeInput)) sizeInput = 15;
-    const unit = document.getElementById('fontSizeUnit').value;
-    const newSize = (unit === 'pt')
-      ? (sizeInput * 1.33333).toFixed(0) + 'px'
-      : sizeInput + 'px';
-    
-    let selectionContent = "";
-    try {
-      selectionContent = editor.selection.getContent({ format: 'html' });
-      if (typeof selectionContent !== 'string') selectionContent = "";
-    } catch (err) {
-      console.error("Error getting selection content:", err);
-      selectionContent = "";
-    }
-    
-    try {
-      if (selectionContent && selectionContent.length > 0) {
-        editor.formatter.apply('custom_font_size', { value: newSize });
-      } else {
-        defaultFontSize = newSize;
-        if (editor.getDoc && editor.getDoc().body) {
-          editor.getDoc().body.style.fontSize = newSize;
-        }
-      }
-    } catch (err) {
-      console.error("Error applying new font size:", err);
-    }
-    
-    localStorage.setItem('editorFontSize', JSON.stringify({
-      px: newSize,
-      display: sizeInput,
-      unit: unit
-    }));
-    
-    try {
-      editor.fire('NodeChange');
-    } catch (err) {
-      console.error("Error firing NodeChange:", err);
-    }
+function updateEditorFontSize() {
+  const editor = tinymce.get('editor');
+  if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') {
+    console.warn("Editor is not ready.");
+    return;
   }
+
+  let sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
+  if (isNaN(sizeInput)) sizeInput = 15;
+  const unit = document.getElementById('fontSizeUnit').value;
+  const newSize = (unit === 'pt')
+    ? (sizeInput * 1.33333).toFixed(0) + 'px'
+    : sizeInput + 'px';
+
+  let selectionContent = "";
+  try {
+    const result = editor.selection.getContent({ format: 'html' });
+    if (typeof result === 'string') {
+      selectionContent = result;
+    }
+  } catch (err) {
+    console.error("Error getting selection content:", err);
+  }
+
+  try {
+    if (typeof selectionContent === 'string' && selectionContent.length > 0) {
+      editor.formatter.apply('custom_font_size', { value: newSize });
+    } else {
+      defaultFontSize = newSize;
+      if (editor.getDoc && editor.getDoc().body) {
+        editor.getDoc().body.style.fontSize = newSize;
+      }
+    }
+  } catch (err) {
+    console.error("Error applying font size:", err);
+  }
+
+  localStorage.setItem('editorFontSize', JSON.stringify({
+    px: newSize,
+    display: sizeInput,
+    unit: unit
+  }));
+
+  try {
+    editor.fire('NodeChange');
+  } catch (err) {
+    console.error("Error firing NodeChange:", err);
+  }
+}
+
 
   // Επαναφορά του αποθηκευμένου font size
   function restoreFontSize() {
