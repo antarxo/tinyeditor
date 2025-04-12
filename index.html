@@ -63,6 +63,10 @@
       flex: 1;
       box-sizing: border-box;
     }
+    /* Κρύβουμε το input αρχείου και το εμφανίζουμε μόνο μέσα από το label */
+    #fileLoader {
+      display: none;
+    }
     textarea, #editor_ifr {
       width: 100%;
       border: 2px solid #ccc;
@@ -87,7 +91,8 @@
 <div id="toolbar-drawer">
   <div class="control-group row">
     <button onclick="saveFile()">💾 Αποθήκευση</button>
-    <label for="fileLoader" style="cursor:pointer;">📂Άνοιγμα</label>
+    <!-- Χρησιμοποιούμε μόνο το label για το άνοιγμα αρχείου -->
+    <label for="fileLoader" style="cursor:pointer;">📂 Άνοιγμα</label>
     <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
   </div>
   <div class="control-group row">
@@ -99,20 +104,20 @@
     </select>
   </div>
   <div class="control-group row">
-    <label>🖼Εικόνα</label>
+    <label>🖼 Εικόνα</label>
     <input type="text" id="imagePath" placeholder="assets/img.jpg" oninput="previewImage()">
-    <button onclick="insertImagePath()">+Εισαγωγή</button>
+    <button onclick="insertImagePath()">+ Εισαγωγή</button>
   </div>
   <div class="control-group row">
     <img id="imagePreview" src="" alt="preview">
   </div>
   <div class="control-group row">
-    <label>🔗iframe</label>
+    <label>🔗 iframe</label>
     <input type="text" id="iframePath" placeholder="https://...">
-    <button onclick="insertIframe()">+Εισαγωγή</button>
+    <button onclick="insertIframe()">+ Εισαγωγή</button>
   </div>
   <div class="control-group row">
-    <button onclick="insertLaTeX()">∑Latex</button>
+    <button onclick="insertLaTeX()">∑ Latex</button>
   </div>
   <div class="control-group row">
     <label>Μέγεθος</label>
@@ -170,14 +175,11 @@
     toggleBtn.style.right = drawer.classList.contains('open') ? (drawer.offsetWidth - 2) + 'px' : '0px';
   }
 
-  // Δημιουργία ή ενημέρωση ενός style tag μέσα στο head του iframe για το default font size
   function updateEditorDefaultFontSize(newSize) {
     const editor = tinymce.get('editor');
     if (editor && editor.getDoc) {
       const doc = editor.getDoc();
-      if (doc.body) {
-        doc.body.style.fontSize = newSize;
-      }
+      if (doc.body) { doc.body.style.fontSize = newSize; }
       let styleEl = doc.getElementById("default-font-size-style");
       if (!styleEl) {
         styleEl = doc.createElement("style");
@@ -188,7 +190,6 @@
     }
   }
 
-  // Ενημέρωση του editor όταν αλλάζει το font size από το drawer
   function updateEditorFontSize() {
     const editor = tinymce.get('editor');
     if (!editor || typeof editor.selection.getContent !== 'function') return;
@@ -223,7 +224,6 @@
       unit: unit
     }));
   
-    // Ενημέρωση μέσω nodeChanged αντί για fire
     syncDrawerToToolbar(newSize);
     updateEditorDefaultFontSize(newSize);
   }
@@ -278,7 +278,6 @@
         if (editor.getContent({ format: 'html' }).trim() === "" && editor.getDoc && editor.getDoc().body) {
           editor.getDoc().body.style.fontSize = defaultFontSize;
         }
-        
         const doc = editor.getDoc();
         const observer = new MutationObserver(function(mutationsList) {
           mutationsList.forEach(function(mutation) {
@@ -305,33 +304,37 @@
     }
   });
 
-  // Αναθεωρημένη συνάρτηση φόρτωσης αρχείου με έλεγχο για τη διαθεσιμότητα του editor και δυνατότητα εξαγωγής μόνο του περιεχομένου της <body> σε περίπτωση πλήρους HTML
+  // Η συνάρτηση loadFile τώρα ελέγχει αν υπάρχουν μη αποθηκευμένες αλλαγές.
   function loadFile(event) {
     const file = event.target.files[0];
     if (!file) return;
     
+    const editor = tinymce.get('editor');
+    if (!editor) {
+      console.error("TinyMCE editor δεν είναι διαθέσιμος ακόμη.");
+      return;
+    }
+    
+    // Έλεγχος μη αποθηκευμένων αλλαγών: αν το περιεχόμενο δεν είναι κενό, ρωτάμε.
+    const currentContent = editor.getContent({ format: 'html' }).trim();
+    if (currentContent !== "" && !confirm("Έχετε μη αποθηκευμένες αλλαγές. Θέλετε να συνεχίσετε και να φορτώσετε το νέο αρχείο;")) {
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onload = function(e) {
-      const fileContent = e.target.result;
+      let fileContent = e.target.result;
       console.log("File loaded, content length:", fileContent.length);
       
-      // Εξαγωγή περιεχομένου της <body> αν υπάρχει <html>
-      let contentToSet = fileContent;
+      // Αν ανιχνεύεται πλήρες HTML, εξάγουμε το περιεχόμενο της <body>
       if (fileContent.toLowerCase().includes("<html")) {
         const bodyMatch = fileContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         if (bodyMatch && bodyMatch[1]) {
-          contentToSet = bodyMatch[1];
+          fileContent = bodyMatch[1];
         }
       }
       
-      // Έλεγχος αν ο TinyMCE editor έχει ήδη αρχικοποιηθεί
-      const editor = tinymce.get('editor');
-      if (!editor) {
-        console.error("TinyMCE editor δεν είναι διαθέσιμος ακόμη.");
-        return;
-      }
-      
-      editor.setContent(contentToSet);
+      editor.setContent(fileContent);
       fileLoaded = true;
       
       const settings = JSON.parse(localStorage.getItem('pageSettings') || '{}');
