@@ -190,64 +190,62 @@
   }
 
   // Ενημέρωση του editor όταν αλλάζει το font size από το drawer
- function updateEditorFontSize() {
-  const editor = tinymce.get('editor');
-  if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') return;
+  function updateEditorFontSize() {
+    const editor = tinymce.get('editor');
+    if (!editor || typeof editor.selection.getContent !== 'function') return;
   
-  let sizeInput = parseFloat(document.getElementById('fontSizeValue').value) || 15;
-  const unit = document.getElementById('fontSizeUnit').value;
-  const newSize = (unit === 'pt')
-                    ? (sizeInput * 1.33333).toFixed(0) + 'px'
-                    : sizeInput + 'px';
+    let sizeInput = parseFloat(document.getElementById('fontSizeValue').value) || 15;
+    const unit = document.getElementById('fontSizeUnit').value;
+    const newSize = (unit === 'pt')
+                      ? (sizeInput * 1.33333).toFixed(0) + 'px'
+                      : sizeInput + 'px';
   
-  let selectionContent = '';
-  try {
-    selectionContent = editor.selection.getContent({ format: 'html' }) || '';
-  } catch (err) {
-    console.error("Error getting selection content:", err);
-  }
-  
-  try {
-    if (selectionContent.length > 0) {
-      // Αν υπάρχει επιλεγμένο κείμενο, εφαρμόζουμε το custom format
-      editor.formatter.apply('custom_font_size', { value: newSize });
-    } else {
-      // Αν δεν υπάρχει επιλογή, θέτουμε το default στο body
-      defaultFontSize = newSize;
-      if (editor.getDoc && editor.getDoc().body) {
-        editor.getDoc().body.style.fontSize = newSize;
-      }
+    // Έλεγχος ότι το περιεχόμενο της επιλογής είναι ορισμένο και συμβολοσειρά
+    let selectionContent = editor.selection.getContent({ format: 'html' });
+    if (typeof selectionContent !== 'string') {
+      selectionContent = '';
     }
-  } catch (err) {
-    console.error("Error applying new font size:", err);
-  }
   
-  localStorage.setItem('editorFontSize', JSON.stringify({
-    px: newSize,
-    display: sizeInput,
-    unit: unit
-  }));
+    try {
+      if (selectionContent.length > 0) {
+        // Εάν υπάρχει επιλεγμένο κείμενο, εφαρμόζουμε custom format
+        editor.formatter.apply('custom_font_size', { value: newSize });
+      } else {
+        // Εάν δεν υπάρχει επιλογή, θέτουμε το default στο body
+        defaultFontSize = newSize;
+        if (editor.getDoc && editor.getDoc().body) {
+          editor.getDoc().body.style.fontSize = newSize;
+        }
+      }
+    } catch (err) {
+      console.error("Error applying new font size:", err);
+    }
   
-  // Ενημέρωση του state του TinyMCE (δηλαδή ο fontsizer του toolbar)
-  syncDrawerToToolbar(newSize);
-
-   
-    // Ενημέρωση του style στο iframe ώστε νέες παράγραφοι να έχουν το νέο μέγεθος
+    localStorage.setItem('editorFontSize', JSON.stringify({
+      px: newSize,
+      display: sizeInput,
+      unit: unit
+    }));
+  
+    // Ενημέρωση TinyMCE state με έλεγχο σε περίπτωση αποτυχίας
+    syncDrawerToToolbar(newSize);
+  
+    // Ενημέρωση του style ώστε νέες παράγραφοι να εφαρμόζουν το νέο font size
     updateEditorDefaultFontSize(newSize);
   }
-function syncDrawerToToolbar(newSize) {
-  const editor = tinymce.get('editor');
-  if (editor && editor.getDoc && editor.getDoc().body) {
-    // Θέτουμε το font size του body του editor
-    editor.getDoc().body.style.fontSize = newSize;
-    // Πυροδοτούμε το NodeChange για να ενημερωθούν ενδεχομένως οι εσωτερικοί listeners
-    try {
-      editor.fire('NodeChange');
-    } catch (e) {
-      console.error("Error firing NodeChange:", e);
+
+  function syncDrawerToToolbar(newSize) {
+    const editor = tinymce.get('editor');
+    if (editor && editor.getDoc && editor.getDoc().body) {
+      editor.getDoc().body.style.fontSize = newSize;
+      try {
+        editor.fire('NodeChange');
+      } catch (e) {
+        console.error("Error firing NodeChange:", e);
+      }
     }
   }
-}
+
   // Επαναφορά αποθηκευμένων ρυθμίσεων font size
   function restoreFontSize() {
     const saved = localStorage.getItem('editorFontSize');
@@ -280,7 +278,7 @@ function syncDrawerToToolbar(newSize) {
     height: 620,
     language: 'el',
     branding: false,
-    // Αντί για ορισμό font-size μέσω content_style, αφήνουμε το αποτέλεσμα του updateEditorDefaultFontSize να “επικάλυψει” όλο το περιεχόμενο.
+    // Αφήνουμε το αποτέλεσμα του updateEditorDefaultFontSize να “επικάλυψει” το περιεχόμενο.
     content_style: 'body { font-family:Helvetica,Arial,sans-serif; }',
     formats: {
       custom_font_size: { inline: 'span', styles: { fontSize: '%value' } }
@@ -293,7 +291,7 @@ function syncDrawerToToolbar(newSize) {
           editor.getDoc().body.style.fontSize = defaultFontSize;
         }
         
-        // Χρήση MutationObserver για να "καθαρίζουμε" νέες παραγράφους που δεν έχουν ορισμένο font size
+        // Χρήση MutationObserver για ενημέρωση νέων παραγράφων χωρίς ορισμένο font size
         const doc = editor.getDoc();
         const observer = new MutationObserver(function(mutationsList) {
           mutationsList.forEach(function(mutation) {
@@ -309,9 +307,8 @@ function syncDrawerToToolbar(newSize) {
         observer.observe(doc.body, { childList: true, subtree: true });
       });
       
-      // Επιπλέον listener για keyup (π.χ. μετά το Enter)
+      // Listener για keyup μετά το Enter
       editor.on('keyup', function(e) {
-        // Ελέγχουμε όλα τα <p> χωρίς inline font-size και τα ενημερώνουμε
         const paragraphs = editor.dom.select('p');
         paragraphs.forEach(function(p) {
           if (!p.style.fontSize || p.style.fontSize === "") {
@@ -322,7 +319,7 @@ function syncDrawerToToolbar(newSize) {
     }
   });
 
-  // Λειτουργίες εισαγωγής
+  // Λειτουργίες εισαγωγής περιεχομένου
   function insertImagePath() {
     const path = document.getElementById("imagePath").value.trim();
     if (path) {
