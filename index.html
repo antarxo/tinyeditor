@@ -178,74 +178,84 @@
   let fileLoaded = false;
   let defaultFontSize = '15px';
 
-  // Toggle Drawer: Με τις αλλαγές, αφαιρέσαμε τον συγχρονισμό του font size κατά το άνοιγμα του drawer
+  // Toggle Drawer: Απλή αλλαγή εμφάνισης χωρίς συγχρονισμό
   function toggleDrawer() {
     const drawer = document.getElementById('toolbar-drawer');
     drawer.classList.toggle('open');
     const toggleBtn = document.getElementById('drawer-toggle');
     toggleBtn.style.right = drawer.classList.contains('open') ? (drawer.offsetWidth - 2) + 'px' : '0px';
-    // Δεν γίνεται πλέον συγχρονισμός με το περιεχόμενο του editor
   }
 
-  // Συνάρτηση συγχρονισμού του font size (κατά προτίμηση μπορεί να διατηρηθεί για χειρισμούς, αλλα δεν καλείται πούθενά πλέον)
-  function syncFontSizeControl() {
-    // Η λειτουργία αυτή δεν θα εκτελείται πλέον για συγχρονισμό
+  // Συνάρτηση για ενημέρωση του default style μέσα στο editor ώστε να έχει το επιθυμητό font size
+  function updateEditorDefaultFontSize(newSize) {
+    const editor = tinymce.get('editor');
+    if (editor && editor.getDoc) {
+      const doc = editor.getDoc();
+      // Ενημέρωση του inline style του body
+      if (doc.body) {
+        doc.body.style.fontSize = newSize;
+      }
+      // Έλεγχος και δημιουργία style tag για τις παραγράφους
+      let styleEl = doc.getElementById("default-font-size-style");
+      if (!styleEl) {
+        styleEl = doc.createElement("style");
+        styleEl.id = "default-font-size-style";
+        doc.head.appendChild(styleEl);
+      }
+      styleEl.innerHTML = "body, p { font-size: " + newSize + " !important; }";
+    }
   }
 
   // Ενημέρωση του editor όταν αλλάζει το font size από το drawer
-function updateEditorFontSize() {
-  const editor = tinymce.get('editor');
-  if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') return;
-  
-  let sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
-  if (isNaN(sizeInput)) {
-    sizeInput = 15; // default αν η τιμή δεν είναι έγκυρη
-  }
-  const unit = document.getElementById('fontSizeUnit').value;
-  const newSize = (unit === 'pt')
-                    ? (sizeInput * 1.33333).toFixed(0) + 'px'
-                    : sizeInput + 'px';
-  
-  let selectionContent = '';
-  try {
-    selectionContent = editor.selection.getContent({ format: 'html' });
-    if (typeof selectionContent !== 'string') {
+  function updateEditorFontSize() {
+    const editor = tinymce.get('editor');
+    if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') return;
+    
+    let sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
+    if (isNaN(sizeInput)) {
+      sizeInput = 15; // default αν η τιμή δεν είναι έγκυρη
+    }
+    const unit = document.getElementById('fontSizeUnit').value;
+    const newSize = (unit === 'pt')
+                      ? (sizeInput * 1.33333).toFixed(0) + 'px'
+                      : sizeInput + 'px';
+    
+    let selectionContent = '';
+    try {
+      selectionContent = editor.selection.getContent({ format: 'html' });
+      if (typeof selectionContent !== 'string') {
+        selectionContent = '';
+      }
+    } catch (err) {
+      console.error("Error getting selection content:", err);
       selectionContent = '';
     }
-  } catch (err) {
-    console.error("Error getting selection content:", err);
-    selectionContent = '';
-  }
-  
-  try {
-    if (selectionContent && selectionContent.length > 0) {
-      // Αν υπάρχει περιεχόμενο επιλογής εφαρμόζεται το custom format
-      editor.formatter.apply('custom_font_size', { value: newSize });
-    } else {
-      // Δεν υπάρχει επιλογή, εφαρμόζεται το default στο body
-      defaultFontSize = newSize;
-      if (editor.getDoc && editor.getDoc().body) {
-        editor.getDoc().body.style.fontSize = newSize;
+    
+    try {
+      if (selectionContent && selectionContent.length > 0) {
+        // Εφαρμογή στο επιλεγμένο κείμενο
+        editor.formatter.apply('custom_font_size', { value: newSize });
+      } else {
+        // Εφαρμογή στο body του editor για να είναι το default για νέα κείμενα
+        defaultFontSize = newSize;
+        if (editor.getDoc && editor.getDoc().body) {
+          editor.getDoc().body.style.fontSize = newSize;
+        }
       }
+    } catch (err) {
+      console.error("Error applying new font size:", err);
     }
-  } catch (err) {
-    console.error("Error applying new font size:", err);
+    
+    // Αποθήκευση στο localStorage
+    localStorage.setItem('editorFontSize', JSON.stringify({
+      px: newSize,
+      display: sizeInput,
+      unit: unit
+    }));
+
+    // Ενημέρωση του default style στο editor ώστε και τα νέα στοιχεία (π.χ. παραγράφοι) να έχουν το σωστό font size.
+    updateEditorDefaultFontSize(newSize);
   }
-  
-  // Αποθήκευση ρυθμίσεων στο localStorage
-  localStorage.setItem('editorFontSize', JSON.stringify({
-    px: newSize,
-    display: sizeInput,
-    unit: unit
-  }));
-  
-  // Το σχολιασμένο editor.fire('NodeChange'); αποφεύγει το σφάλμα
-  // try {
-  //   editor.fire('NodeChange');
-  // } catch (err) {
-  //   console.error("Error firing NodeChange:", err);
-  // }
-}
 
   // Ανάκτηση και εφαρμογή αποθηκευμένου font size και μονάδας
   function restoreFontSize() {
@@ -264,6 +274,7 @@ function updateEditorFontSize() {
           const editor = tinymce.get('editor');
           if (editor && editor.getDoc && editor.getDoc().body) {
             editor.getDoc().body.style.fontSize = data.px;
+            updateEditorDefaultFontSize(data.px);
           }
         }
       } catch (e) {
@@ -272,13 +283,6 @@ function updateEditorFontSize() {
       }
     }
   }
-
-  // Δεν πραγματοποιείται πλέον συγχρονισμός μέσω global click listener
-  // document.addEventListener('click', function(e) {
-  //   const drawer = document.getElementById('toolbar-drawer');
-  //   const editorElem = document.getElementById('editor_ifr');
-  //   // Δεν καλείται πλέον syncFontSizeControl();
-  // });
 
   // TinyMCE Init
   tinymce.init({
@@ -309,16 +313,14 @@ function updateEditorFontSize() {
           setTimeout(() => {
             let node = editor.selection.getNode();
             if (node && node.nodeName === 'P' && !node.style.fontSize) {
+              // Αν δημιουργηθεί νέα παράγραφος χωρίς ρυθμισμένο font size, του δίνουμε το default.
               node.style.fontSize = defaultFontSize;
             }
           }, 0);
         }
       });
       
-      // Αφαιρέθηκε το NodeChange event που εκτελούσε συγχρονισμό
-      // editor.on('NodeChange', function() {
-      //   syncFontSizeControl();
-      // });
+      // Δεν απαιτείται πλέον NodeChange event για συγχρονισμό.
     }
   });
 
