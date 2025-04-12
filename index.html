@@ -193,58 +193,59 @@
   }
 
   // Ενημέρωση του editor όταν αλλάζει το font size από το drawer
-  function updateEditorFontSize() {
-    const editor = tinymce.get('editor');
-    if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') return;
-    
-    let sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
-    if (isNaN(sizeInput)) {
-      sizeInput = 15; // default αν η τιμή δεν είναι έγκυρη
-    }
-    const unit = document.getElementById('fontSizeUnit').value;
-    const newSize = (unit === 'pt')
-                      ? (sizeInput * 1.33333).toFixed(0) + 'px'
-                      : sizeInput + 'px';
-    
-    let selectionContent = '';
-    try {
-      selectionContent = editor.selection.getContent({ format: 'html' });
-      if (typeof selectionContent !== 'string') {
-        selectionContent = '';
-      }
-    } catch (err) {
-      console.error("Error getting selection content:", err);
+function updateEditorFontSize() {
+  const editor = tinymce.get('editor');
+  if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') return;
+  
+  let sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
+  if (isNaN(sizeInput)) {
+    sizeInput = 15; // default αν η τιμή δεν είναι έγκυρη
+  }
+  const unit = document.getElementById('fontSizeUnit').value;
+  const newSize = (unit === 'pt')
+                    ? (sizeInput * 1.33333).toFixed(0) + 'px'
+                    : sizeInput + 'px';
+  
+  let selectionContent = '';
+  try {
+    selectionContent = editor.selection.getContent({ format: 'html' });
+    if (typeof selectionContent !== 'string') {
       selectionContent = '';
     }
-    
-    try {
-      if (selectionContent && selectionContent.length > 0) {
-        // Αν υπάρχει περιεχόμενο επιλογής εφαρμόζεται το custom format
-        editor.formatter.apply('custom_font_size', { value: newSize });
-      } else {
-        // Δεν υπάρχει επιλογή, εφαρμόζεται το default στο body
-        defaultFontSize = newSize;
-        if (editor.getDoc && editor.getDoc().body) {
-          editor.getDoc().body.style.fontSize = newSize;
-        }
-      }
-    } catch (err) {
-      console.error("Error applying new font size:", err);
-    }
-    
-    // Αποθήκευση ρυθμίσεων στο localStorage
-    localStorage.setItem('editorFontSize', JSON.stringify({
-      px: newSize,
-      display: sizeInput,
-      unit: unit
-    }));
-    
-    try {
-      editor.fire('NodeChange');
-    } catch (err) {
-      console.error("Error firing NodeChange:", err);
-    }
+  } catch (err) {
+    console.error("Error getting selection content:", err);
+    selectionContent = '';
   }
+  
+  try {
+    if (selectionContent && selectionContent.length > 0) {
+      // Αν υπάρχει περιεχόμενο επιλογής εφαρμόζεται το custom format
+      editor.formatter.apply('custom_font_size', { value: newSize });
+    } else {
+      // Δεν υπάρχει επιλογή, εφαρμόζεται το default στο body
+      defaultFontSize = newSize;
+      if (editor.getDoc && editor.getDoc().body) {
+        editor.getDoc().body.style.fontSize = newSize;
+      }
+    }
+  } catch (err) {
+    console.error("Error applying new font size:", err);
+  }
+  
+  // Αποθήκευση ρυθμίσεων στο localStorage
+  localStorage.setItem('editorFontSize', JSON.stringify({
+    px: newSize,
+    display: sizeInput,
+    unit: unit
+  }));
+  
+  // Το σχολιασμένο editor.fire('NodeChange'); αποφεύγει το σφάλμα
+  // try {
+  //   editor.fire('NodeChange');
+  // } catch (err) {
+  //   console.error("Error firing NodeChange:", err);
+  // }
+}
 
   // Ανάκτηση και εφαρμογή αποθηκευμένου font size και μονάδας
   function restoreFontSize() {
