@@ -64,7 +64,9 @@
       box-sizing: border-box;
     }
     /* Στο file input εμφανίζεται μόνο το label (κρύβεται το input) */
-    #fileLoader { display: none; }
+    #fileLoader { 
+      display: none; 
+    }
     /* Εμφάνιση του ονόματος αρχείου στο drawer */
     #currentFile {
       font-size: 12px;
@@ -220,7 +222,7 @@
 <script>
   let fileLoaded = false;
   let defaultFontSize = '15px';
-  // metaContent αποθηκεύει τα meta tags που ενδεχομένως εξάγονται κατά την φόρτωση αρχείου
+  // metaContent αποθηκεύει τα meta tags που ενδεχομένως εξάγονται κατά τη φόρτωση αρχείου
   let metaContent = '';
   // Μεταβλητή για το όνομα του ανοικτού αρχείου
   let currentFileName = '';
@@ -359,8 +361,8 @@
     }
   });
 
-  // Η συνάρτηση clearEditor "κλείνει" το τρέχον αρχείο ή νέο κενό αρχείο,
-  // επαναφέροντας το περιεχόμενο, το metaContent, το flag fileLoaded, και καθαρίζοντας το path του file.
+  // Συνάρτηση clearEditor για να "κλείνει" το τρέχον αρχείο ή/και νέο κενό αρχείο.
+  // Επαναφέρει το περιεχόμενο, τις μεταβλητές (metaContent, fileLoaded, currentFileName) και καθαρίζει το file input.
   function clearEditor() {
     const editor = tinymce.get('editor');
     if (editor) { editor.setContent(''); }
@@ -415,7 +417,7 @@
       // Αποθήκευση του ονόματος του αρχείου
       currentFileName = file.name;
       document.getElementById('currentFile').textContent = "Ανοικτό αρχείο: " + currentFileName;
-      // Επαναφορά της τιμής του file input
+      // Επαναφορά της τιμής του file input ώστε να επιτρέπεται το ανοίγμα νέου αρχείου
       document.getElementById('fileLoader').value = '';
       
       const settings = JSON.parse(localStorage.getItem('pageSettings') || '{}');
