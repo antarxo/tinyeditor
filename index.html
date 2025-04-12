@@ -223,9 +223,8 @@
       unit: unit
     }));
   
-    // Αντί να καλούμε το fire('NodeChange'), χρησιμοποιούμε το nodeChanged()
+    // Ενημέρωση μέσω nodeChanged αντί για fire
     syncDrawerToToolbar(newSize);
-  
     updateEditorDefaultFontSize(newSize);
   }
 
@@ -233,7 +232,6 @@
     const editor = tinymce.get('editor');
     if (editor && editor.getDoc && editor.getDoc().body) {
       editor.getDoc().body.style.fontSize = newSize;
-      // Χρήση της ενσωματωμένης nodeChanged αντί για χειροκίνητη εκπομπή event
       if (typeof editor.nodeChanged === 'function') {
         editor.nodeChanged();
       }
@@ -307,31 +305,35 @@
     }
   });
 
-  function insertImagePath() {
-    const path = document.getElementById("imagePath").value.trim();
-    if (path) {
-      tinymce.get('editor').execCommand('mceInsertContent', false, `<img src="${path}" alt="img" />`);
-    }
-  }
-  function insertIframe() {
-    const path = document.getElementById("iframePath").value.trim();
-    if (path) {
-      tinymce.get('editor').execCommand('mceInsertContent', false, `<iframe src="${path}" width="600" height="400" frameborder="0" allowfullscreen></iframe>`);
-    }
-  }
-  function insertLaTeX() {
-    const latex = prompt("LaTeX:");
-    if (latex) {
-      tinymce.get('editor').execCommand('mceInsertContent', false, `\\[${latex}\\]`);
-    }
-  }
+  // Αναθεωρημένη συνάρτηση φόρτωσης αρχείου με έλεγχο για τη διαθεσιμότητα του editor και δυνατότητα εξαγωγής μόνο του περιεχομένου της <body> σε περίπτωση πλήρους HTML
   function loadFile(event) {
     const file = event.target.files[0];
     if (!file) return;
+    
     const reader = new FileReader();
     reader.onload = function(e) {
-      tinymce.get('editor').setContent(e.target.result);
+      const fileContent = e.target.result;
+      console.log("File loaded, content length:", fileContent.length);
+      
+      // Εξαγωγή περιεχομένου της <body> αν υπάρχει <html>
+      let contentToSet = fileContent;
+      if (fileContent.toLowerCase().includes("<html")) {
+        const bodyMatch = fileContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch && bodyMatch[1]) {
+          contentToSet = bodyMatch[1];
+        }
+      }
+      
+      // Έλεγχος αν ο TinyMCE editor έχει ήδη αρχικοποιηθεί
+      const editor = tinymce.get('editor');
+      if (!editor) {
+        console.error("TinyMCE editor δεν είναι διαθέσιμος ακόμη.");
+        return;
+      }
+      
+      editor.setContent(contentToSet);
       fileLoaded = true;
+      
       const settings = JSON.parse(localStorage.getItem('pageSettings') || '{}');
       if (settings.width) {
         document.getElementById('customWidth').value = parseInt(settings.width);
@@ -340,8 +342,14 @@
       }
       setTimeout(changePageSettings, 100);
     };
+    
+    reader.onerror = function(err) {
+      console.error("Error reading file:", err);
+    };
+    
     reader.readAsText(file, 'UTF-8');
   }
+
   function saveFile() {
     const content = tinymce.get("editor").getContent();
     const blob = new Blob([content], { type: "text/html;charset=utf-8" });
@@ -355,6 +363,7 @@
     const height = document.getElementById('customHeight').value;
     localStorage.setItem('pageSettings', JSON.stringify({ width, height }));
   }
+
   function previewImage() {
     const url = document.getElementById("imagePath").value.trim();
     const preview = document.getElementById("imagePreview");
@@ -366,6 +375,7 @@
       preview.style.display = "none";
     }
   }
+
   function changePageSettings() {
     const size = document.getElementById('pageSizeSelector').value;
     const orient = document.getElementById('orientationSelector').value;
