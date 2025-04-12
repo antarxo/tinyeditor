@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>HTML Editor - Οικονομία Ύψους</title>
-  <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3as7fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+  <script src="https://cdn.tiny.cloud/1/j1bgwxszfus5ms9p1ec5526fa3gvm0ous3fojyest1fwf/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
   <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/langs/el.js" referrerpolicy="origin"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
@@ -178,7 +178,7 @@
   let fileLoaded = false;
   let defaultFontSize = '15px';
 
-  // Toggle Drawer (απλή αλλαγή εμφάνισης χωρίς συγχρονισμό)
+  // Toggle Drawer (απλή αλλαγή εμφάνισης)
   function toggleDrawer() {
     const drawer = document.getElementById('toolbar-drawer');
     drawer.classList.toggle('open');
@@ -186,7 +186,7 @@
     toggleBtn.style.right = drawer.classList.contains('open') ? (drawer.offsetWidth - 2) + 'px' : '0px';
   }
 
-  // Συνάρτηση ενημέρωσης default style μέσα στο editor ώστε να εφαρμόζει το νέο font size σε νέα στοιχεία
+  // Ενημέρωση του default style μέσα στο editor ώστε να εφαρμόζεται το νέο font size
   function updateEditorDefaultFontSize(newSize) {
     const editor = tinymce.get('editor');
     if (editor && editor.getDoc) {
@@ -194,14 +194,12 @@
       if (doc.body) {
         doc.body.style.fontSize = newSize;
       }
-      // Αναζήτηση/δημιουργία style tag στο head του iframe
       let styleEl = doc.getElementById("default-font-size-style");
       if (!styleEl) {
         styleEl = doc.createElement("style");
         styleEl.id = "default-font-size-style";
         doc.head.appendChild(styleEl);
       }
-      // Εφαρμογή CSS κανόνα με !important ώστε νέες παράγραφοι να κληρονομούν το μέγεθος
       styleEl.innerHTML = "body, p { font-size: " + newSize + " !important; }";
     }
   }
@@ -236,7 +234,7 @@
         // Εφαρμογή στο επιλεγμένο κείμενο
         editor.formatter.apply('custom_font_size', { value: newSize });
       } else {
-        // Δεν υπάρχει επιλογή, ορίζεται το newSize ως default στο body του editor
+        // Αν δεν υπάρχει επιλογή, ορίζεται το νέο default font size στο body
         defaultFontSize = newSize;
         if (editor.getDoc && editor.getDoc().body) {
           editor.getDoc().body.style.fontSize = newSize;
@@ -253,29 +251,11 @@
       unit: unit
     }));
     
-    // Ενημέρωση default style ώστε και νέες παράγραφοι να έχουν το σωστό font size.
+    // Ενημέρωση του default style ώστε νέες παράγραφοι να έχουν το σωστό font size.
     updateEditorDefaultFontSize(newSize);
   }
 
-  // Listener στο keyup για εφαρμογή του default font size σε νέα παραγραφοποιημένα στοιχεία
-  function applyDefaultFontSizeToCurrentNode() {
-    const editor = tinymce.get('editor');
-    if (!editor) return;
-    let node = editor.selection.getNode();
-    if (node && node.nodeName === 'P' && (!node.style.fontSize || node.style.fontSize === "")) {
-      node.style.fontSize = defaultFontSize;
-    }
-  }
-  
-  // Προσθήκη listener για keyup ώστε μετά το Enter να εφαρμοστεί το default
-  document.addEventListener('keyup', function(e) {
-    // Αν πατήθηκε το Enter ή άλλος χαρακτήρας, δοκιμάζουμε να ενημερώσουμε το node.
-    if (e.key === 'Enter') {
-      setTimeout(applyDefaultFontSizeToCurrentNode, 0);
-    }
-  });
-
-  // Ανάκτηση και εφαρμογή αποθηκευμένου font size και μονάδας
+  // Επαναφορά αποθηκευμένου font size
   function restoreFontSize() {
     const saved = localStorage.getItem('editorFontSize');
     if (saved) {
@@ -315,7 +295,7 @@
       custom_font_size: { inline: 'span', styles: { fontSize: '%value' } }
     },
     setup: function (editor) {
-      editor.on('init', () => {
+      editor.on('init', function() {
         restoreFontSize();
         changePageSettings();
         if (editor.getContent({ format: 'html' }).trim() === "") {
@@ -323,11 +303,26 @@
             editor.getDoc().body.style.fontSize = defaultFontSize;
           }
         }
+        // Δημιουργία MutationObserver για να επιβάλλεται το default font size σε νέα προστιθέμενα στοιχεία (π.χ. <p>)
+        const doc = editor.getDoc();
+        const observer = new MutationObserver(function(mutationsList) {
+          mutationsList.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+              mutation.addedNodes.forEach(function(node) {
+                if (node.nodeName === 'P' && (!node.style.fontSize || node.style.fontSize === "")) {
+                  node.style.fontSize = defaultFontSize;
+                }
+              });
+            }
+          });
+        });
+        observer.observe(doc.body, { childList: true, subtree: true });
       });
       
       editor.on('keydown', function(e) {
+        // Αν πατηθεί Enter, δώσε λίγο χρόνο και έπειτα έλεγξε ότι το νέο στοιχείο έχει το default font size
         if (e.keyCode === 13) {
-          setTimeout(() => {
+          setTimeout(function() {
             let node = editor.selection.getNode();
             if (node && node.nodeName === 'P' && (!node.style.fontSize || node.style.fontSize === "")) {
               node.style.fontSize = defaultFontSize;
