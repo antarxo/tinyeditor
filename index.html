@@ -230,7 +230,11 @@
   
   // Ενημέρωση του state του TinyMCE (δηλαδή ο fontsizer του toolbar)
   syncDrawerToToolbar(newSize);
-}
+
+   
+    // Ενημέρωση του style στο iframe ώστε νέες παράγραφοι να έχουν το νέο μέγεθος
+    updateEditorDefaultFontSize(newSize);
+  }
 function syncDrawerToToolbar(newSize) {
   const editor = tinymce.get('editor');
   if (editor && editor.getDoc && editor.getDoc().body) {
@@ -244,12 +248,6 @@ function syncDrawerToToolbar(newSize) {
     }
   }
 }
-
-    
-    // Ενημέρωση του style στο iframe ώστε νέες παράγραφοι να έχουν το νέο μέγεθος
-    updateEditorDefaultFontSize(newSize);
-  },
-
   // Επαναφορά αποθηκευμένων ρυθμίσεων font size
   function restoreFontSize() {
     const saved = localStorage.getItem('editorFontSize');
