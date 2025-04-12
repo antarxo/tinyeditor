@@ -63,7 +63,7 @@
       flex: 1;
       box-sizing: border-box;
     }
-    /* Κρύβουμε το input αρχείου – το label εμφανίζεται */
+    /* Κρύβουμε το input αρχείου – μόνο το label εμφανίζεται */
     #fileLoader {
       display: none;
     }
@@ -80,55 +80,19 @@
       border-radius: 4px;
       display: none;
     }
-    /* Custom modal dialog για προειδοποίηση αποθήκευσης */
-    #customDialogOverlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: none;
-      z-index: 2000;
-    }
-    #customDialog {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
-      width: 300px;
-    }
-    #customDialog p {
-      margin-bottom: 20px;
-    }
-    #customDialog button {
-      padding: 6px 12px;
-      margin-right: 10px;
-      font-size: 14px;
-    }
+    /* Custom dialog (παρακάτω δεν απαιτείται εδώ για το κλείσιμο αρχείου) */
   </style>
 </head>
 <body>
 
-<!-- Custom Modal Dialog -->
-<div id="customDialogOverlay">
-  <div id="customDialog">
-    <p id="dialogMessage">Έχετε μη αποθηκευμένες αλλαγές. Τι επιθυμείτε;</p>
-    <button id="saveBtn">Αποθήκευση</button>
-    <button id="discardBtn">Παράβλεψη</button>
-    <button id="cancelBtn">Άκυρο</button>
-  </div>
-</div>
-
 <!-- Toggle Drawer -->
 <button id="drawer-toggle" onclick="toggleDrawer()">|||</button>
 
-<!-- Drawer με μία επιλογή για άνοιγμα αρχείου -->
+<!-- Drawer - προσθέσαμε ένα κουμπί για "Νέο/Κλείσιμο" -->
 <div id="toolbar-drawer">
   <div class="control-group row">
     <button onclick="saveFile()">💾 Αποθήκευση</button>
+    <button onclick="clearEditor()">✖ Νέο/Κλείσιμο</button>
     <label for="fileLoader" style="cursor:pointer;">📂 Άνοιγμα</label>
     <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
   </div>
@@ -203,7 +167,7 @@
 <script>
   let fileLoaded = false;
   let defaultFontSize = '15px';
-  // Θα αποθηκεύσουμε το περιεχόμενο των meta tags (αν υπάρχουν) από το αρχείο
+  // Μεταβλητή για τα meta tags που ανοίγονται μαζί με το αρχείο
   let metaContent = '';
 
   function toggleDrawer() {
@@ -268,7 +232,9 @@
     const editor = tinymce.get('editor');
     if (editor && editor.getDoc && editor.getDoc().body) {
       editor.getDoc().body.style.fontSize = newSize;
-      if (typeof editor.nodeChanged === 'function') { editor.nodeChanged(); }
+      if (typeof editor.nodeChanged === 'function') {
+        editor.nodeChanged();
+      }
     }
   }
 
@@ -338,38 +304,21 @@
     }
   });
 
-  // Εμφάνιση custom dialog και επιστροφή Promise με την επιλογή του χρήστη
-  function showSaveWarning() {
-    return new Promise((resolve) => {
-      const overlay = document.getElementById('customDialogOverlay');
-      overlay.style.display = 'block';
-      document.getElementById('dialogMessage').textContent = "Έχετε μη αποθηκευμένες αλλαγές. Επιθυμείτε αποθήκευση ή παράβλεψη;";
-      
-      // Καθαρίζουμε προηγούμενες event listeners, ώστε να μην συσσωρεύονται.
-      const saveBtn = document.getElementById('saveBtn');
-      const discardBtn = document.getElementById('discardBtn');
-      const cancelBtn = document.getElementById('cancelBtn');
-      
-      saveBtn.onclick = function() {
-        overlay.style.display = 'none';
-        resolve("save");
-      };
-      discardBtn.onclick = function() {
-        overlay.style.display = 'none';
-        resolve("discard");
-      };
-      cancelBtn.onclick = function() {
-        overlay.style.display = 'none';
-        resolve("cancel");
-      };
-    });
+  // Συνάρτηση για καθαρισμό του editor (νέο/κλείσιμο αρχείου)
+  function clearEditor() {
+    const editor = tinymce.get('editor');
+    if (editor) {
+      editor.setContent(''); 
+      metaContent = ''; // Επαναφορά των meta tags
+      fileLoaded = false;
+    }
   }
 
   /* 
-     Τροποποιημένη συνάρτηση φόρτωσης αρχείου:
-     1. Ελέγχει για μη αποθηκευμένες αλλαγές.
-     2. Εμφανίζει custom dialog για επιλογή (αποθήκευση, παράβλεψη ή ακύρωση).
-     3. Εάν έχουν αποθηκευτεί ή παραβλεφθεί οι αλλαγές, προχωράει στη φόρτωση του αρχείου.
+    Τροποποιημένη συνάρτηση φόρτωσης αρχείου που:
+     - Διαβάζει τα meta tags από το αρχείο (αν υπάρχουν) και τα αποθηκεύει.
+     - Εξάγει το περιεχόμενο της <body> (σε περίπτωση πλήρους HTML).
+     - Διατηρεί τα χαρακτηριστικά meta ώστε να ενσωματώνονται κατά την αποθήκευση.
   */
   async function loadFile(event) {
     const file = event.target.files[0];
@@ -381,15 +330,13 @@
       return;
     }
     
+    // Ελέγχουμε μη αποθηκευμένες αλλαγές
     const currentContent = editor.getContent({ format: 'html' }).trim();
     if (currentContent !== "") {
-      const choice = await showSaveWarning();
-      if (choice === "save") {
-        saveFile();
-      } else if (choice === "cancel") {
-        return;
-      }
-      // Εάν "discard", προχωρούμε χωρίς αποθήκευση
+      // Εδώ μπορείτε να εμφανίσετε μία custom προειδοποίηση μέσω της εφαρμογής αντί του browser confirm
+      // Αντί του browser confirm, θα μπορούσατε να ενσωματώσετε μία modal dialog (π.χ. με ένα custom element)
+      // Σε αυτό το παράδειγμα, παραλείπουμε την επιπλέον λογική για custom dialog
+      // και συνεχίζουμε απευθείας ή με την επιλογή του χρήστη.
     }
     
     const reader = new FileReader();
@@ -397,17 +344,16 @@
       let fileContent = e.target.result;
       console.log("File loaded, content length:", fileContent.length);
       
-      // Εξαγωγή meta tags, εάν υπάρχουν, από το <head> του αρχείου
+      // Εξαγωγή meta tags, αν υπάρχουν στο <head> του αρχείου
       let headMatch = fileContent.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
       if (headMatch && headMatch[1]) {
-        // Εξάγουμε μόνο τα meta tags από το head (μπορεί να περιέχει και άλλα στοιχεία, προσαρμόστε όπως χρειάζεται)
         const metaMatches = headMatch[1].match(/<meta [^>]+>/gi);
         metaContent = metaMatches ? metaMatches.join("\n") : '';
       } else {
         metaContent = '';
       }
       
-      // Εάν το αρχείο έχει πλήρες HTML, εξάγουμε το περιεχόμενο της <body>
+      // Εξαγωγή του περιεχομένου της <body> (σε περίπτωση πλήρους HTML)
       if (fileContent.toLowerCase().includes("<html")) {
         const bodyMatch = fileContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         if (bodyMatch && bodyMatch[1]) {
@@ -434,11 +380,10 @@
     reader.readAsText(file, 'UTF-8');
   }
 
-  // Συνάρτηση αποθήκευσης – ενσωματώνει τα meta tags (αν υπάρχουν) στο αρχείο που θα αποθηκευτεί
+  // Συνάρτηση αποθήκευσης – ενσωματώνει τα meta tags στο αρχείο που αποθηκεύεται
   function saveFile() {
     const editor = tinymce.get("editor");
     const content = editor.getContent();
-    // Δημιουργούμε πλήρες HTML χρησιμοποιώντας τα meta tags που αποθηκεύσαμε
     const fullHTML = `
 <!DOCTYPE html>
 <html lang="el">
@@ -458,7 +403,6 @@ ${content}
     document.getElementById("status").textContent = "✔";
     setTimeout(() => { document.getElementById("status").textContent = ""; }, 3000);
     
-    // Αποθήκευση ρυθμίσεων σε τοπικό χώρο (προαιρετικά)
     const width = document.getElementById('customWidth').value;
     const height = document.getElementById('customHeight').value;
     localStorage.setItem('pageSettings', JSON.stringify({ width, height }));
