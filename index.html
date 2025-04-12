@@ -170,7 +170,7 @@
     toggleBtn.style.right = drawer.classList.contains('open') ? (drawer.offsetWidth - 2) + 'px' : '0px';
   }
 
-  // Δημιουργία ή ενημέρωση ενός style tag μέσα στο head του iframe, ώστε το default font size να ισχύει
+  // Δημιουργία ή ενημέρωση ενός style tag μέσα στο head του iframe για το default font size
   function updateEditorDefaultFontSize(newSize) {
     const editor = tinymce.get('editor');
     if (editor && editor.getDoc) {
@@ -184,7 +184,6 @@
         styleEl.id = "default-font-size-style";
         doc.head.appendChild(styleEl);
       }
-      // Το !important εξασφαλίζει ότι οι νέες παράγραφοι θα κληρονομήσουν το νέο font size
       styleEl.innerHTML = "body, p { font-size: " + newSize + " !important; }";
     }
   }
@@ -200,7 +199,6 @@
                       ? (sizeInput * 1.33333).toFixed(0) + 'px'
                       : sizeInput + 'px';
   
-    // Έλεγχος ότι το περιεχόμενο της επιλογής είναι ορισμένο και συμβολοσειρά
     let selectionContent = editor.selection.getContent({ format: 'html' });
     if (typeof selectionContent !== 'string') {
       selectionContent = '';
@@ -208,10 +206,8 @@
   
     try {
       if (selectionContent.length > 0) {
-        // Εάν υπάρχει επιλεγμένο κείμενο, εφαρμόζουμε custom format
         editor.formatter.apply('custom_font_size', { value: newSize });
       } else {
-        // Εάν δεν υπάρχει επιλογή, θέτουμε το default στο body
         defaultFontSize = newSize;
         if (editor.getDoc && editor.getDoc().body) {
           editor.getDoc().body.style.fontSize = newSize;
@@ -227,10 +223,9 @@
       unit: unit
     }));
   
-    // Ενημέρωση TinyMCE state με έλεγχο σε περίπτωση αποτυχίας
+    // Αντί να καλούμε το fire('NodeChange'), χρησιμοποιούμε το nodeChanged()
     syncDrawerToToolbar(newSize);
   
-    // Ενημέρωση του style ώστε νέες παράγραφοι να εφαρμόζουν το νέο font size
     updateEditorDefaultFontSize(newSize);
   }
 
@@ -238,15 +233,13 @@
     const editor = tinymce.get('editor');
     if (editor && editor.getDoc && editor.getDoc().body) {
       editor.getDoc().body.style.fontSize = newSize;
-      try {
-        editor.fire('NodeChange');
-      } catch (e) {
-        console.error("Error firing NodeChange:", e);
+      // Χρήση της ενσωματωμένης nodeChanged αντί για χειροκίνητη εκπομπή event
+      if (typeof editor.nodeChanged === 'function') {
+        editor.nodeChanged();
       }
     }
   }
 
-  // Επαναφορά αποθηκευμένων ρυθμίσεων font size
   function restoreFontSize() {
     const saved = localStorage.getItem('editorFontSize');
     if (saved && saved.trim().charAt(0) === '{') {
@@ -269,16 +262,13 @@
     }
   }
 
-  // Initialize TinyMCE
   tinymce.init({
     selector: '#editor',
     plugins: 'code link lists fullscreen image table preview media',
-    // Αφαιρούμε το default control για το font size από το toolbar
     toolbar: 'undo redo | blocks fontfamily fontsize| bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat preview code fullscreen',
     height: 620,
     language: 'el',
     branding: false,
-    // Αφήνουμε το αποτέλεσμα του updateEditorDefaultFontSize να “επικάλυψει” το περιεχόμενο.
     content_style: 'body { font-family:Helvetica,Arial,sans-serif; }',
     formats: {
       custom_font_size: { inline: 'span', styles: { fontSize: '%value' } }
@@ -291,7 +281,6 @@
           editor.getDoc().body.style.fontSize = defaultFontSize;
         }
         
-        // Χρήση MutationObserver για ενημέρωση νέων παραγράφων χωρίς ορισμένο font size
         const doc = editor.getDoc();
         const observer = new MutationObserver(function(mutationsList) {
           mutationsList.forEach(function(mutation) {
@@ -307,7 +296,6 @@
         observer.observe(doc.body, { childList: true, subtree: true });
       });
       
-      // Listener για keyup μετά το Enter
       editor.on('keyup', function(e) {
         const paragraphs = editor.dom.select('p');
         paragraphs.forEach(function(p) {
@@ -319,7 +307,6 @@
     }
   });
 
-  // Λειτουργίες εισαγωγής περιεχομένου
   function insertImagePath() {
     const path = document.getElementById("imagePath").value.trim();
     if (path) {
