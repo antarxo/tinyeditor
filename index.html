@@ -220,7 +220,10 @@
   // Ενημέρωση του editor όταν αλλάζει το font size από το drawer
   function updateEditorFontSize() {
     const editor = tinymce.get('editor');
-    if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') return;
+    if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') {
+      console.warn("Editor is not ready for updating font size.");
+      return;
+    }
     
     let sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
     if (isNaN(sizeInput)) {
@@ -244,10 +247,10 @@
     
     try {
       if (selectionContent && selectionContent.length > 0) {
-        // Αν υπάρχει περιεχόμενο επιλογής εφαρμόζεται το custom format
+        // Εάν υπάρχει έγκυρο περιεχόμενο επιλογής, εφαρμόζεται το custom format
         editor.formatter.apply('custom_font_size', { value: newSize });
       } else {
-        // Δεν υπάρχει επιλογή, εφαρμόζεται το default στο body
+        // Αν δεν υπάρχει ενεργή επιλογή, ορίζεται το default στο body
         defaultFontSize = newSize;
         if (editor.getDoc && editor.getDoc().body) {
           editor.getDoc().body.style.fontSize = newSize;
@@ -257,7 +260,7 @@
       console.error("Error applying new font size:", err);
     }
     
-    // Αποθήκευση ρυθμίσεων στο localStorage
+    // Αποθήκευση στο localStorage
     localStorage.setItem('editorFontSize', JSON.stringify({
       px: newSize,
       display: sizeInput,
@@ -330,7 +333,7 @@
       });
       
       editor.on('keydown', function(e) {
-        if (e.keyCode === 13) {
+        if (e.keyCode === 13) { // Enter
           setTimeout(() => {
             let node = editor.selection.getNode();
             if (node && node.nodeName === 'P' && !node.style.fontSize) {
@@ -462,11 +465,6 @@
     document.getElementById('custom-margins').style.display = margin === 'custom' ? 'block' : 'none';
     document.getElementById('custom-size-group').style.display = size === 'Custom' ? 'block' : 'none';
   }
-  const selectionContent = editor.selection.getContent({ format: 'html' });
-console.log("Selection content:", selectionContent);
-if (selectionContent && typeof selectionContent === "string" && selectionContent.length > 0) {
-  // εφαρμογή αλλαγής
-}
 </script>
 
 </body>
