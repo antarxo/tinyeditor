@@ -174,42 +174,33 @@
 <textarea id="editor"></textarea>
 
 <script>
-  // Global flag για φόρτωση αρχείου και global default font size για νέες εισαγωγές
+  // Global variables
   let fileLoaded = false;
   let defaultFontSize = '15px';
 
-  // Toggle Drawer: Όταν ανοίγει, συγχρονίζει το control του font size στο drawer
+  // Toggle Drawer: Ανοίγει/κλείνει το drawer και συγχρονίζει το font size control
   function toggleDrawer() {
     const drawer = document.getElementById('toolbar-drawer');
     drawer.classList.toggle('open');
     const toggleBtn = document.getElementById('drawer-toggle');
     toggleBtn.style.right = drawer.classList.contains('open') ? (drawer.offsetWidth - 2) + 'px' : '0px';
-    
     if (drawer.classList.contains('open')) {
       syncFontSizeControl();
     }
   }
 
-  // Συνάρτηση συγχρονισμού του font size στο drawer
+  // Συγχρονισμός του font size του drawer με το computed style της επιλογής ή του body του editor
   function syncFontSizeControl() {
     const editor = tinymce.get('editor');
     if (!editor) return;
-    let node = editor.selection.getNode();
-    if (!node || node.nodeName === 'BODY') {
-      node = editor.getDoc().body;
-    }
+    let node = editor.selection.getNode() || editor.getDoc().body;
     try {
       const computedStyle = window.getComputedStyle(node);
-      let computedFontSize = computedStyle.getPropertyValue('font-size'); // π.χ. "16px"
+      let computedFontSize = computedStyle.getPropertyValue('font-size');
       if (computedFontSize) {
         const numPx = parseFloat(computedFontSize);
         const unitFromDrawer = document.getElementById('fontSizeUnit').value;
-        let displayValue;
-        if (unitFromDrawer === 'pt') {
-          displayValue = Math.round(numPx / 1.33333);
-        } else {
-          displayValue = Math.round(numPx);
-        }
+        let displayValue = unitFromDrawer === 'pt' ? Math.round(numPx / 1.33333) : Math.round(numPx);
         document.getElementById('fontSizeValue').value = displayValue;
       }
     } catch (err) {
@@ -221,36 +212,33 @@
   function updateEditorFontSize() {
     const editor = tinymce.get('editor');
     if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') {
-      console.warn("Editor is not ready for updating font size.");
+      console.warn("Editor is not ready for updateEditorFontSize.");
       return;
     }
     
     let sizeInput = parseFloat(document.getElementById('fontSizeValue').value);
-    if (isNaN(sizeInput)) {
-      sizeInput = 15; // default αν η τιμή δεν είναι έγκυρη
-    }
+    if (isNaN(sizeInput)) sizeInput = 15;
     const unit = document.getElementById('fontSizeUnit').value;
     const newSize = (unit === 'pt')
-                      ? (sizeInput * 1.33333).toFixed(0) + 'px'
-                      : sizeInput + 'px';
+      ? (sizeInput * 1.33333).toFixed(0) + 'px'
+      : sizeInput + 'px';
     
-    let selectionContent = '';
+    // Ανάκτηση της επιλογής (selection) με έλεγχο εγκυρότητας
+    let selectionContent = "";
     try {
       selectionContent = editor.selection.getContent({ format: 'html' });
-      if (typeof selectionContent !== 'string') {
-        selectionContent = '';
-      }
+      if (typeof selectionContent !== 'string') selectionContent = "";
     } catch (err) {
       console.error("Error getting selection content:", err);
-      selectionContent = '';
+      selectionContent = "";
     }
     
     try {
       if (selectionContent && selectionContent.length > 0) {
-        // Εάν υπάρχει έγκυρο περιεχόμενο επιλογής, εφαρμόζεται το custom format
+        // Αν υπάρχει ενεργή επιλογή, εφαρμόζεται το custom format
         editor.formatter.apply('custom_font_size', { value: newSize });
       } else {
-        // Αν δεν υπάρχει ενεργή επιλογή, ορίζεται το default στο body
+        // Αν δεν υπάρχει επιλογή, εφαρμόζεται το default στο body του editor
         defaultFontSize = newSize;
         if (editor.getDoc && editor.getDoc().body) {
           editor.getDoc().body.style.fontSize = newSize;
@@ -260,7 +248,7 @@
       console.error("Error applying new font size:", err);
     }
     
-    // Αποθήκευση στο localStorage
+    // Αποθήκευση της επιλογής στο localStorage για επαναφορά αργότερα
     localStorage.setItem('editorFontSize', JSON.stringify({
       px: newSize,
       display: sizeInput,
@@ -274,14 +262,10 @@
     }
   }
 
-  // Ανάκτηση και εφαρμογή αποθηκευμένου font size και μονάδας
+  // Ανάκτηση αποθηκευμένου font size και εφαρμογή του στον editor
   function restoreFontSize() {
     const saved = localStorage.getItem('editorFontSize');
-    if (saved) {
-      if (saved.trim().charAt(0) !== '{') {
-        localStorage.removeItem('editorFontSize');
-        return;
-      }
+    if (saved && saved.trim().charAt(0) === '{') {
       try {
         const data = JSON.parse(saved);
         if (data && data.px && data.display && data.unit) {
@@ -300,7 +284,7 @@
     }
   }
 
-  // Listener για κλικ εκτός του drawer/Editor ώστε να συγχρονίζεται το control
+  // Listener για κλικ εκτός του drawer και του editor ώστε να συγχρονίζεται το control
   document.addEventListener('click', function(e) {
     const drawer = document.getElementById('toolbar-drawer');
     const editorElem = document.getElementById('editor_ifr');
@@ -309,7 +293,7 @@
     }
   });
 
-  // TinyMCE Init
+  // TinyMCE Init με κατάλληλες ρυθμίσεις και setup callbacks
   tinymce.init({
     selector: '#editor',
     plugins: 'code link lists fullscreen image table preview media',
@@ -325,15 +309,13 @@
       editor.on('init', () => {
         restoreFontSize();
         changePageSettings();
-        if (editor.getContent({ format: 'html' }).trim() === "") {
-          if (editor.getDoc && editor.getDoc().body) {
-            editor.getDoc().body.style.fontSize = defaultFontSize;
-          }
+        if (editor.getContent({ format: 'html' }).trim() === "" && editor.getDoc && editor.getDoc().body) {
+          editor.getDoc().body.style.fontSize = defaultFontSize;
         }
       });
       
       editor.on('keydown', function(e) {
-        if (e.keyCode === 13) { // Enter
+        if (e.keyCode === 13) {
           setTimeout(() => {
             let node = editor.selection.getNode();
             if (node && node.nodeName === 'P' && !node.style.fontSize) {
@@ -344,7 +326,11 @@
       });
       
       editor.on('NodeChange', function() {
-        syncFontSizeControl();
+        try {
+          syncFontSizeControl();
+        } catch (err) {
+          console.error("Error during NodeChange handling:", err);
+        }
       });
     }
   });
@@ -353,7 +339,10 @@
   function insertImagePath() {
     const path = document.getElementById("imagePath").value.trim();
     if (path) {
-      tinymce.get('editor').execCommand('mceInsertContent', false, `<img src="${path}" alt="img" />`);
+      const editor = tinymce.get('editor');
+      if (editor) {
+        editor.execCommand('mceInsertContent', false, `<img src="${path}" alt="img" />`);
+      }
     }
   }
 
@@ -361,7 +350,10 @@
   function insertIframe() {
     const path = document.getElementById("iframePath").value.trim();
     if (path) {
-      tinymce.get('editor').execCommand('mceInsertContent', false, `<iframe src="${path}" width="600" height="400" frameborder="0" allowfullscreen></iframe>`);
+      const editor = tinymce.get('editor');
+      if (editor) {
+        editor.execCommand('mceInsertContent', false, `<iframe src="${path}" width="600" height="400" frameborder="0" allowfullscreen></iframe>`);
+      }
     }
   }
 
@@ -369,7 +361,10 @@
   function insertLaTeX() {
     const latex = prompt("LaTeX:");
     if (latex) {
-      tinymce.get('editor').execCommand('mceInsertContent', false, `\\[${latex}\\]`);
+      const editor = tinymce.get('editor');
+      if (editor) {
+        editor.execCommand('mceInsertContent', false, `\\[${latex}\\]`);
+      }
     }
   }
 
@@ -379,7 +374,10 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
-      tinymce.get('editor').setContent(e.target.result);
+      const editor = tinymce.get('editor');
+      if (editor) {
+        editor.setContent(e.target.result);
+      }
       fileLoaded = true;
       const settings = JSON.parse(localStorage.getItem('pageSettings') || '{}');
       if (settings.width) {
@@ -394,7 +392,9 @@
 
   // Αποθήκευση αρχείου
   function saveFile() {
-    const content = tinymce.get("editor").getContent();
+    const editor = tinymce.get('editor');
+    if (!editor) return;
+    const content = editor.getContent();
     const blob = new Blob([content], { type: "text/html;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -462,8 +462,8 @@
     body.style.background = '#fff';
     body.style.padding = padding;
 
-    document.getElementById('custom-margins').style.display = margin === 'custom' ? 'block' : 'none';
-    document.getElementById('custom-size-group').style.display = size === 'Custom' ? 'block' : 'none';
+    document.getElementById('custom-margins').style.display = (margin === 'custom') ? 'block' : 'none';
+    document.getElementById('custom-size-group').style.display = (size === 'Custom') ? 'block' : 'none';
   }
 </script>
 
