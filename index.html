@@ -80,7 +80,7 @@
       border-radius: 4px;
       display: none;
     }
-    /* Custom dialog (παρακάτω δεν απαιτείται εδώ για το κλείσιμο αρχείου) */
+    /* (Ορισμός custom dialog εάν χρειαστεί για άλλες προειδοποιήσεις) */
   </style>
 </head>
 <body>
@@ -88,7 +88,7 @@
 <!-- Toggle Drawer -->
 <button id="drawer-toggle" onclick="toggleDrawer()">|||</button>
 
-<!-- Drawer - προσθέσαμε ένα κουμπί για "Νέο/Κλείσιμο" -->
+<!-- Drawer - περιλαμβάνει κουμπιά για Αποθήκευση, Νέο/Κλείσιμο και Άνοιγμα -->
 <div id="toolbar-drawer">
   <div class="control-group row">
     <button onclick="saveFile()">💾 Αποθήκευση</button>
@@ -167,7 +167,7 @@
 <script>
   let fileLoaded = false;
   let defaultFontSize = '15px';
-  // Μεταβλητή για τα meta tags που ανοίγονται μαζί με το αρχείο
+  // Η μεταβλητή metaContent αποθηκεύει τα meta tags που εξάγονται κατά τη φόρτωση αρχείου
   let metaContent = '';
 
   function toggleDrawer() {
@@ -304,21 +304,24 @@
     }
   });
 
-  // Συνάρτηση για καθαρισμό του editor (νέο/κλείσιμο αρχείου)
+  // Συνάρτηση clearEditor για να "κλείνει" το τρέχον αρχείο ή/και νέο κενό,
+  // επαναφέροντας το περιεχόμενο, τις μεταβλητές (metaContent, fileLoaded) και τη τιμή του file input.
   function clearEditor() {
     const editor = tinymce.get('editor');
     if (editor) {
-      editor.setContent(''); 
-      metaContent = ''; // Επαναφορά των meta tags
+      editor.setContent('');
+      metaContent = '';
       fileLoaded = false;
     }
+    // Επαναφορά της τιμής του file input ώστε να μπορείτε να ανοίξετε ξανά αρχείο
+    document.getElementById('fileLoader').value = '';
   }
 
   /* 
-    Τροποποιημένη συνάρτηση φόρτωσης αρχείου που:
-     - Διαβάζει τα meta tags από το αρχείο (αν υπάρχουν) και τα αποθηκεύει.
-     - Εξάγει το περιεχόμενο της <body> (σε περίπτωση πλήρους HTML).
-     - Διατηρεί τα χαρακτηριστικά meta ώστε να ενσωματώνονται κατά την αποθήκευση.
+    Τροποποιημένη συνάρτηση φόρτωσης αρχείου:
+    - Εξάγει τα meta tags (αν υπάρχουν) από το <head> του αρχείου και τα αποθηκεύει στη μεταβλητή metaContent.
+    - Εξάγει το περιεχόμενο της <body> αν υπάρχει πλήρες HTML.
+    - Θέτει το περιεχόμενο στον editor.
   */
   async function loadFile(event) {
     const file = event.target.files[0];
@@ -330,21 +333,15 @@
       return;
     }
     
-    // Ελέγχουμε μη αποθηκευμένες αλλαγές
-    const currentContent = editor.getContent({ format: 'html' }).trim();
-    if (currentContent !== "") {
-      // Εδώ μπορείτε να εμφανίσετε μία custom προειδοποίηση μέσω της εφαρμογής αντί του browser confirm
-      // Αντί του browser confirm, θα μπορούσατε να ενσωματώσετε μία modal dialog (π.χ. με ένα custom element)
-      // Σε αυτό το παράδειγμα, παραλείπουμε την επιπλέον λογική για custom dialog
-      // και συνεχίζουμε απευθείας ή με την επιλογή του χρήστη.
-    }
+    // (Προαιρετικά) Ελέγχουμε τυχόν μη αποθηκευμένες αλλαγές εδώ.
+    // Μπορούμε να εμφανίσουμε custom dialog εάν το απαιτεί η εφαρμογή.
     
     const reader = new FileReader();
     reader.onload = function(e) {
       let fileContent = e.target.result;
       console.log("File loaded, content length:", fileContent.length);
       
-      // Εξαγωγή meta tags, αν υπάρχουν στο <head> του αρχείου
+      // Εξαγωγή meta tags (αν υπάρχουν) από το <head> του αρχείου
       let headMatch = fileContent.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
       if (headMatch && headMatch[1]) {
         const metaMatches = headMatch[1].match(/<meta [^>]+>/gi);
@@ -353,7 +350,7 @@
         metaContent = '';
       }
       
-      // Εξαγωγή του περιεχομένου της <body> (σε περίπτωση πλήρους HTML)
+      // Εξαγωγή του περιεχομένου της <body> για πλήρη HTML αρχεία
       if (fileContent.toLowerCase().includes("<html")) {
         const bodyMatch = fileContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         if (bodyMatch && bodyMatch[1]) {
@@ -363,6 +360,8 @@
       
       editor.setContent(fileContent);
       fileLoaded = true;
+      // Επαναφορά της τιμής του file input ώστε να επιτρέπεται το ανοίγμα νέου αρχείου
+      document.getElementById('fileLoader').value = '';
       
       const settings = JSON.parse(localStorage.getItem('pageSettings') || '{}');
       if (settings.width) {
@@ -380,7 +379,7 @@
     reader.readAsText(file, 'UTF-8');
   }
 
-  // Συνάρτηση αποθήκευσης – ενσωματώνει τα meta tags στο αρχείο που αποθηκεύεται
+  // Συνάρτηση αποθήκευσης - ενσωματώνει και τα meta tags στο αποθηκευμένο αρχείο
   function saveFile() {
     const editor = tinymce.get("editor");
     const content = editor.getContent();
@@ -458,6 +457,28 @@ ${content}
     body.style.padding = padding;
     document.getElementById('custom-margins').style.display = margin === 'custom' ? 'block' : 'none';
     document.getElementById('custom-size-group').style.display = size === 'Custom' ? 'block' : 'none';
+  }
+  
+  // Helper functions για εισαγωγή περιεχομένου (εικόνα, iframe, LaTeX)
+  function insertImagePath() {
+    const path = document.getElementById("imagePath").value.trim();
+    if (path) {
+      tinymce.get('editor').execCommand('mceInsertContent', false, `<img src="${path}" alt="img" />`);
+    }
+  }
+  
+  function insertIframe() {
+    const path = document.getElementById("iframePath").value.trim();
+    if (path) {
+      tinymce.get('editor').execCommand('mceInsertContent', false, `<iframe src="${path}" width="600" height="400" frameborder="0" allowfullscreen></iframe>`);
+    }
+  }
+  
+  function insertLaTeX() {
+    const latex = prompt("LaTeX:");
+    if (latex) {
+      tinymce.get('editor').execCommand('mceInsertContent', false, `\\[${latex}\\]`);
+    }
   }
 </script>
 
