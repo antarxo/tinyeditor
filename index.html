@@ -190,26 +190,7 @@
   }
 
   // Συγχρονισμός του font size στο drawer με το computed style της επιλογής ή του body
-  function syncFontSizeControl() {
-    const editor = tinymce.get('editor');
-    if (!editor) return;
-    let node = editor.selection.getNode() || editor.getDoc().body;
-    try {
-      const computedStyle = window.getComputedStyle(node);
-      let computedFontSize = computedStyle.getPropertyValue('font-size');
-      if (computedFontSize) {
-        const numPx = parseFloat(computedFontSize);
-        const unitFromDrawer = document.getElementById('fontSizeUnit').value;
-        let displayValue = unitFromDrawer === 'pt' ? Math.round(numPx / 1.33333) : Math.round(numPx);
-        document.getElementById('fontSizeValue').value = displayValue;
-      }
-    } catch (err) {
-      console.error("Error in syncFontSizeControl:", err);
-    }
-  }
-
-  // Ενημέρωση του editor όταν αλλάζει το font size από το drawer
-function updateEditorFontSize() {
+ function updateEditorFontSize() {
   const editor = tinymce.get('editor');
   if (!editor || !editor.selection || typeof editor.selection.getContent !== 'function') {
     console.warn("Editor is not ready.");
@@ -234,7 +215,7 @@ function updateEditorFontSize() {
   }
 
   try {
-    if (typeof selectionContent === 'string' && selectionContent.length > 0) {
+    if (selectionContent.length > 0) {
       editor.formatter.apply('custom_font_size', { value: newSize });
     } else {
       defaultFontSize = newSize;
@@ -252,11 +233,12 @@ function updateEditorFontSize() {
     unit: unit
   }));
 
-  try {
-    editor.fire('NodeChange');
-  } catch (err) {
-    console.error("Error firing NodeChange:", err);
-  }
+  // ⚠️ ΑΦΑΙΡΟΥΜΕ ΤΗ ΓΡΑΜΜΗ ΠΟΥ ΠΡΟΚΑΛΕΙ ΤΟ ΣΦΑΛΜΑ:
+  // try {
+  //   editor.fire('NodeChange');
+  // } catch (err) {
+  //   console.error("Error firing NodeChange:", err);
+  // }
 }
 
 
