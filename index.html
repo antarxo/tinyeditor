@@ -63,7 +63,7 @@
       flex: 1;
       box-sizing: border-box;
     }
-    /* Κρύβουμε το input αρχείου και το εμφανίζουμε μόνο μέσα από το label */
+    /* Κρύβουμε το input αρχείου και εμφανίζουμε μόνο το label */
     #fileLoader {
       display: none;
     }
@@ -91,7 +91,7 @@
 <div id="toolbar-drawer">
   <div class="control-group row">
     <button onclick="saveFile()">💾 Αποθήκευση</button>
-    <!-- Χρησιμοποιούμε μόνο το label για το άνοιγμα αρχείου -->
+    <!-- Εμφανίζεται μόνο ένα στοιχείο ανοίγματος αρχείου -->
     <label for="fileLoader" style="cursor:pointer;">📂 Άνοιγμα</label>
     <input type="file" id="fileLoader" accept=".html" onchange="loadFile(event)">
   </div>
@@ -167,7 +167,6 @@
   let fileLoaded = false;
   let defaultFontSize = '15px';
 
-  // Απλή εναλλαγή εμφάνισης του drawer
   function toggleDrawer() {
     const drawer = document.getElementById('toolbar-drawer');
     drawer.classList.toggle('open');
@@ -201,9 +200,7 @@
                       : sizeInput + 'px';
   
     let selectionContent = editor.selection.getContent({ format: 'html' });
-    if (typeof selectionContent !== 'string') {
-      selectionContent = '';
-    }
+    if (typeof selectionContent !== 'string') { selectionContent = ''; }
   
     try {
       if (selectionContent.length > 0) {
@@ -304,21 +301,32 @@
     }
   });
 
-  // Η συνάρτηση loadFile τώρα ελέγχει αν υπάρχουν μη αποθηκευμένες αλλαγές.
+  /* 
+     Τροποποιημένη συνάρτηση φόρτωσης αρχείου:
+     1. Ελέγχει για μη αποθηκευμένες αλλαγές.
+     2. Αν υπάρχουν, ερωτάει: πρώτα "Θέλετε να αποθηκεύσετε;" 
+        - Αν επιλέξει "ΝΑΙ" καλείται η saveFile() πριν συνεχίσει.
+     3. Στη συνέχεια, φορτώνει και εμφανίζει το περιεχόμενο του αρχείου.
+  */
   function loadFile(event) {
     const file = event.target.files[0];
     if (!file) return;
     
     const editor = tinymce.get('editor');
     if (!editor) {
-      console.error("TinyMCE editor δεν είναι διαθέσιμος ακόμη.");
+      console.error("TinyMCE editor δεν είναι διαθέσιμος.");
       return;
     }
     
-    // Έλεγχος μη αποθηκευμένων αλλαγών: αν το περιεχόμενο δεν είναι κενό, ρωτάμε.
     const currentContent = editor.getContent({ format: 'html' }).trim();
-    if (currentContent !== "" && !confirm("Έχετε μη αποθηκευμένες αλλαγές. Θέλετε να συνεχίσετε και να φορτώσετε το νέο αρχείο;")) {
-      return;
+    if (currentContent !== "") {
+      if ( confirm("Έχετε μη αποθηκευμένες αλλαγές. Θέλετε να αποθηκεύσετε πριν ανοίξετε νέο αρχείο;") ) {
+        saveFile();
+      } else {
+        if (!confirm("Οι μη αποθηκευμένες αλλαγές θα χαθούν. Συνεχίσετε;")) {
+          return;
+        }
+      }
     }
     
     const reader = new FileReader();
@@ -326,7 +334,7 @@
       let fileContent = e.target.result;
       console.log("File loaded, content length:", fileContent.length);
       
-      // Αν ανιχνεύεται πλήρες HTML, εξάγουμε το περιεχόμενο της <body>
+      // Αν το αρχείο περιέχει πλήρες HTML, εξάγουμε το περιεχόμενο της <body>
       if (fileContent.toLowerCase().includes("<html")) {
         const bodyMatch = fileContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         if (bodyMatch && bodyMatch[1]) {
