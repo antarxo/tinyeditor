@@ -153,12 +153,18 @@
   
   <div class="control-group row">
     <label>Μέγεθος Γραμματοσειράς</label>
-    <input type="number" id="fontSizeValue" value="15" min="8" max="72" onchange="updateEditorFontSize()">
+    <input type="number" id="fontSizeValue" value="12" min="8" max="72" onchange="updateEditorFontSize()">
     <select id="fontSizeUnit" onchange="updateEditorFontSize()">
+      <option value="pt" selected>pt</option>
       <option value="px">px</option>
-      <option value="pt">pt</option>
     </select>
   </div>
+  
+  <div class="control-group row">
+    <label>Διάστιχο</label>
+    <input type="number" id="lineSpacingValue" value="1.5" step="0.1" min="1" max="3" onchange="updateEditorLineSpacing()">
+  </div>
+  
   <div class="control-group row">
     <label>🖼 Εικόνα</label>
     <input type="text" id="imagePath" placeholder="assets/img.jpg" oninput="previewImage()">
@@ -221,7 +227,7 @@
 
 <script>
   let fileLoaded = false;
-  let defaultFontSize = '15px';
+  let defaultFontSize = '16px';
   // metaContent αποθηκεύει τα meta tags που ενδεχομένως εξάγονται κατά τη φόρτωση αρχείου
   let metaContent = '';
   // Μεταβλητή για το όνομα του ανοικτού αρχείου
@@ -253,7 +259,7 @@
     const editor = tinymce.get('editor');
     if (!editor || typeof editor.selection.getContent !== 'function') return;
   
-    let sizeInput = parseFloat(document.getElementById('fontSizeValue').value) || 15;
+    let sizeInput = parseFloat(document.getElementById('fontSizeValue').value) || 12;
     const unit = document.getElementById('fontSizeUnit').value;
     const newSize = (unit === 'pt')
                       ? (sizeInput * 1.33333).toFixed(0) + 'px'
@@ -283,6 +289,28 @@
   
     syncDrawerToToolbar(newSize);
     updateEditorDefaultFontSize(newSize);
+  }
+
+  function updateEditorLineSpacing() {
+    const spacing = parseFloat(document.getElementById('lineSpacingValue').value) || 1.5;
+    const editor = tinymce.get('editor');
+    if (editor && editor.getDoc) {
+      const doc = editor.getDoc();
+      if (doc.body) { doc.body.style.lineHeight = spacing; }
+      const elements = doc.querySelectorAll('p, li');
+      elements.forEach(function(el) {
+        el.style.lineHeight = spacing;
+      });
+    }
+    localStorage.setItem('editorLineSpacing', spacing);
+  }
+
+  function restoreLineSpacing() {
+    const saved = localStorage.getItem('editorLineSpacing');
+    if (saved) {
+      document.getElementById('lineSpacingValue').value = saved;
+      updateEditorLineSpacing();
+    }
   }
 
   function syncDrawerToToolbar(newSize) {
@@ -325,13 +353,14 @@
     language: 'el',
     branding: false,
     content_style: 'body { font-family:Helvetica,Arial,sans-serif; }',
-    entity_encoding: 'raw', // Εδώ θέτουμε ώστε να μη μετατρέπονται οι χαρακτήρες
+    entity_encoding: 'raw',
     formats: {
       custom_font_size: { inline: 'span', styles: { fontSize: '%value' } }
     },
     setup: function (editor) {
       editor.on('init', function() {
         restoreFontSize();
+        restoreLineSpacing();
         changePageSettings();
         if (editor.getContent({ format: 'html' }).trim() === "" && editor.getDoc && editor.getDoc().body) {
           editor.getDoc().body.style.fontSize = defaultFontSize;
@@ -362,8 +391,6 @@
     }
   });
 
-  // Συνάρτηση clearEditor για να "κλείνει" το τρέχον αρχείο ή/και νέο κενό αρχείο.
-  // Επαναφέρει το περιεχόμενο, τις μεταβλητές (metaContent, fileLoaded, currentFileName) και καθαρίζει το file input.
   function clearEditor() {
     const editor = tinymce.get('editor');
     if (editor) { editor.setContent(''); }
@@ -374,13 +401,6 @@
     document.getElementById('fileLoader').value = '';
   }
 
-  /* 
-    Συνάρτηση φόρτωσης αρχείου:
-    - Εξάγει τα meta tags από το <head> (αν υπάρχουν) και τα αποθηκεύει στη μεταβλητή metaContent.
-    - Εξάγει το περιεχόμενο της <body> για πλήρη HTML αρχεία.
-    - Θέτει το περιεχόμενο στον editor.
-    - Αποθηκεύει το όνομα του αρχείου στη μεταβλητή currentFileName και το εμφανίζει.
-  */
   async function loadFile(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -391,14 +411,11 @@
       return;
     }
     
-    // (Προαιρετικός έλεγχος για μη αποθηκευμένες αλλαγές μπορεί να ενσωματωθεί εδώ)
-    
     const reader = new FileReader();
     reader.onload = function(e) {
       let fileContent = e.target.result;
       console.log("File loaded, content length:", fileContent.length);
       
-      // Εξαγωγή meta tags από το <head> (αν υπάρχουν)
       let headMatch = fileContent.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
       if (headMatch && headMatch[1]) {
         const metaMatches = headMatch[1].match(/<meta [^>]+>/gi);
@@ -407,7 +424,6 @@
         metaContent = '';
       }
       
-      // Αν το αρχείο είναι πλήρες HTML, εξάγουμε το περιεχόμενο της <body>
       if (fileContent.toLowerCase().includes("<html")) {
         const bodyMatch = fileContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         if (bodyMatch && bodyMatch[1]) { fileContent = bodyMatch[1]; }
@@ -415,10 +431,8 @@
       
       editor.setContent(fileContent);
       fileLoaded = true;
-      // Αποθήκευση του ονόματος του αρχείου
       currentFileName = file.name;
       document.getElementById('currentFile').textContent = "Ανοικτό αρχείο: " + currentFileName;
-      // Επαναφορά της τιμής του file input ώστε να επιτρέπεται το ανοίγμα νέου αρχείου
       document.getElementById('fileLoader').value = '';
       
       const settings = JSON.parse(localStorage.getItem('pageSettings') || '{}');
@@ -437,7 +451,6 @@
     reader.readAsText(file, 'UTF-8');
   }
 
-  // Συνάρτηση αποθήκευσης: Ενσωματώνει τα meta tags στο αποθηκευμένο αρχείο
   function saveFile() {
     const editor = tinymce.get("editor");
     const content = editor.getContent();
@@ -517,7 +530,6 @@ ${content}
     document.getElementById('custom-size-group').style.display = size === 'Custom' ? 'block' : 'none';
   }
 
-  // Βοηθητικές συναρτήσεις για εισαγωγή περιεχομένου (εικόνα, iframe, LaTeX)
   function insertImagePath() {
     const path = document.getElementById("imagePath").value.trim();
     if (path) {
