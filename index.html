@@ -251,7 +251,7 @@
         styleEl.id = "default-font-size-style";
         doc.head.appendChild(styleEl);
       }
-      styleEl.innerHTML = "body, p { font-size: " + newSize + " !important; }";
+      styleEl.innerHTML = "body, p, li { font-size: " + newSize + " !important; }";
     }
   }
 
@@ -300,6 +300,8 @@
       const elements = doc.querySelectorAll('p, li');
       elements.forEach(function(el) {
         el.style.lineHeight = spacing;
+        // Ορισμός νέου margin-bottom ώστε να αλλάζει και το "κενό" μεταξύ στοιχείων
+        el.style.marginBottom = spacing + "em";
       });
     }
     localStorage.setItem('editorLineSpacing', spacing);
